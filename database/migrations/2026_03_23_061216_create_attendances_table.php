@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('member_id')->constrained()->cascadeOnDelete();
             $table->foreignId('checked_in_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamp('check_in');
-            $table->timestamp('check_out')->nullable();
+            $table->timestamp('check_in')->index();
+            $table->timestamp('check_out')->nullable()->index();
             $table->text('notes')->nullable();
             $table->timestamps();
         });

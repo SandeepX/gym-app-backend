@@ -32,6 +32,8 @@ return [
 
     ],
 
+    'guard_name' => 'api',
+
     'table_names' => [
 
         /*
@@ -100,7 +102,7 @@ return [
         'team_foreign_key' => 'team_id',
     ],
 
-    'guard_name' => 'api',
+
 
     /*
      * When set to true, the method for checking permissions will be registered on the gate.

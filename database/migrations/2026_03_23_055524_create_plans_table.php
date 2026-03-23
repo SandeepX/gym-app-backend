@@ -14,14 +14,16 @@ return new class extends Migration
     {
         Schema::create('plans', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('name')->index();
             $table->text('description')->nullable();
             $table->decimal('price', 10, 2);
-            $table->integer('duration_days');
+            $table->integer('duration_days')->index();
             $table->integer('max_freeze_days')->default(0);
-            $table->enum('type', PlanTypeEnum::values())->default(PlanTypeEnum::Monthly->value);
+            $table->enum('type', PlanTypeEnum::values())
+                ->default(PlanTypeEnum::Monthly->value)
+                ->index();
             $table->json('features')->nullable();
-            $table->boolean('is_active')->default(true);
+            $table->boolean('is_active')->default(true)->index();
             $table->softDeletes();
             $table->timestamps();
         });

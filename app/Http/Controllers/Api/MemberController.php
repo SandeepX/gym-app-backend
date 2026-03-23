@@ -28,7 +28,7 @@ class MemberController
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
             ->when($request->gender, fn ($q) => $q->where('gender', $request->gender))
             ->latest()
-            ->paginate($request->get('per_page', 15));
+            ->paginate($request->input('per_page', 15));
 
         return $this->success(
             MemberResource::collection($members),
@@ -42,21 +42,28 @@ class MemberController
 
         return DB::transaction(function () use ($request, $validatedData) {
             $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password ?? Str::random(12)),
-                'phone' => $request->phone,
+                'name'      => $request->name,
+                'email'     => $request->email,
+                'password'  => Hash::make($request->password ?? Str::random(12)),
+                'phone'     => $request->phone,
                 'is_active' => true,
             ]);
 
             $user->assignRole('member');
+
+            unset(
+                $validatedData['name'],
+                $validatedData['email'],
+                $validatedData['password'],
+                $validatedData['phone'],
+            );
 
             $validatedData['membership_number'] = Member::generateSequenceNumber('GYM');
 
             $member = $user->member()->create($validatedData);
 
             return $this->success(
-                MemberResource::make($member->load(['user'])),
+                new MemberResource($member->load('user')),
                 'Member created successfully.',
                 201
             );

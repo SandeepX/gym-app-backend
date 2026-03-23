@@ -192,7 +192,7 @@ class TrainerController
 
         $members = $user->assignedMembers()
             ->with(['user', 'activeSubscription.plan'])
-            ->paginate($request->get('per_page', 15));
+            ->paginate($request->input('per_page', 15));
 
         return $this->success(
             $members->through(fn ($member) => [

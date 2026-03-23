@@ -22,12 +22,12 @@ Route::prefix('v1')->group(function () {
         'timestamp' => now()->toIso8601String(),
     ]));
 
-    Route::prefix('auth')->group(function () {
+    Route::prefix('auth')->middleware('throttle:auth')->group(function () {
         Route::post('/register', [AuthController::class, 'register']);
         Route::post('/login', [AuthController::class, 'login']);
     });
 
-    Route::middleware(['auth:sanctum', 'check'])->group(function () {
+    Route::middleware(['auth:api', 'check', 'throttle:api'])->group(function () {
 
         Route::get('users', [UserController::class, 'index']);
         Route::get('users/by-role', [UserController::class, 'byRole']);
@@ -77,7 +77,7 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('payments', PaymentController::class);
 
         // Attendance
-        Route::prefix('subscriptions')->group(function () {
+        Route::prefix('attendance')->group(function () {
             Route::get('/today', [AttendanceController::class, 'today']);
             Route::post('/check-in', [AttendanceController::class, 'checkIn']);
             Route::post('/check-out/{attendance}', [AttendanceController::class, 'checkOut']);

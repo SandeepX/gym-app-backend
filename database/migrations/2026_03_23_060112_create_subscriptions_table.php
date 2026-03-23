@@ -12,16 +12,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('subscriptions', function (Blueprint $table) {
+        Schema::create('subscriptions', static function (Blueprint $table) {
             $table->id();
-            $table->string('subscription_number')->unique();
+            $table->string('subscription_number')->unique()->index();
             $table->foreignId('member_id')->constrained()->cascadeOnDelete();
             $table->foreignId('plan_id')->constrained()->cascadeOnDelete();
-            $table->date('start_date');
-            $table->date('end_date');
-            $table->enum('status', SubscriptionStatusEnum::values())->default(SubscriptionStatusEnum::Active->value);
-            $table->date('freeze_start')->nullable();
-            $table->date('freeze_end')->nullable();
+            $table->date('start_date')->index();
+            $table->date('end_date')->index();
+            $table->enum('status', SubscriptionStatusEnum::values())
+                ->default(SubscriptionStatusEnum::Active->value)
+                ->index();
+            $table->date('freeze_start')->nullable()->index();
+            $table->date('freeze_end')->nullable()->index();
             $table->integer('freeze_days_used')->default(0);
             $table->boolean('auto_renew')->default(false);
             $table->text('notes')->nullable();

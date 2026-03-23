@@ -13,18 +13,26 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('members', function (Blueprint $table) {
+        Schema::create('members', static function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('membership_number')->unique();
+            $table->string('membership_number')
+                ->unique()
+                ->index();
             $table->date('date_of_birth')->nullable();
-            $table->enum('gender', GenderEnum::values())->nullable();
+            $table->enum('gender', GenderEnum::values())
+                ->nullable()
+                ->index();
             $table->text('address')->nullable();
             $table->string('emergency_contact_name')->nullable();
             $table->string('emergency_contact_phone')->nullable();
             $table->text('health_notes')->nullable();
-            $table->date('join_date')->default(now());
-            $table->enum('status', MemberStatusEnum::values())->default(MemberStatusEnum::Active->value);
+            $table->date('join_date')
+                ->default(now()
+                )->index();
+            $table->enum('status', MemberStatusEnum::values())
+                ->default(MemberStatusEnum::Active->value)
+                ->index();
 
             $table->softDeletes();
             $table->timestamps();

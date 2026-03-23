@@ -15,10 +15,10 @@ class RoleController
 
     public function index(): JsonResponse
     {
-        $roles = Role::where('guard_name', 'api')
+        $roles = Role::where('guard_name', 'web')
             ->with('permissions')
             ->get()
-            ->map(fn ($role) => [
+            ->map(fn($role) => [
                 'id' => $role->id,
                 'name' => $role->name,
                 'permissions' => $role->permissions->pluck('name'),
@@ -38,7 +38,7 @@ class RoleController
 
         $role = Role::create([
             'name' => $request->name,
-            'guard_name' => 'api',
+            'guard_name' => 'web',
         ]);
 
         if ($request->permissions) {
@@ -90,12 +90,12 @@ class RoleController
 
         $role->delete();
 
-        return $this->success(message: 'Role deleted successfully.');
+        return $this->success([], message: 'Role deleted successfully.');
     }
 
     public function permissions(): JsonResponse
     {
-        $permissions = Permission::where('guard_name', 'api')
+        $permissions = Permission::where('guard_name', 'web')
             ->pluck('name')
             ->toArray();
 

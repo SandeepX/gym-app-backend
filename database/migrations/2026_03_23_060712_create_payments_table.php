@@ -15,15 +15,19 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->string('invoice_number')->unique();
+            $table->string('invoice_number')->unique()->index();
             $table->foreignId('member_id')->constrained()->cascadeOnDelete();
             $table->foreignId('subscription_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('collected_by')->nullable()->constrained('users')->nullOnDelete();
             $table->decimal('amount', 10, 2);
-            $table->enum('payment_method', PaymentMethodEnum::values())->default(PaymentMethodEnum::Cash->value);
-            $table->enum('status', PaymentStatusEnum::values())->default(PaymentStatusEnum::Paid->value);
+            $table->enum('payment_method', PaymentMethodEnum::values())
+                ->default(PaymentMethodEnum::Cash->value)
+                ->index();
+            $table->enum('status', PaymentStatusEnum::values())
+                ->default(PaymentStatusEnum::Paid->value)
+                ->index();
             $table->string('reference_number')->nullable();
-            $table->timestamp('paid_at')->nullable();
+            $table->timestamp('paid_at')->nullable()->index();
             $table->text('notes')->nullable();
             $table->timestamps();
         });
