@@ -1,0 +1,77 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\SubscriptionStatusEnum;
+use App\Traits\GenerateSequenceNumberTrait;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Subscription extends Model
+{
+    use GenerateSequenceNumberTrait, SoftDeletes;
+
+    protected $fillable = [
+        'subscription_number',
+        'member_id',
+        'plan_id',
+        'start_date',
+        'end_date',
+        'status',
+        'freeze_start',
+        'freeze_end',
+        'freeze_days_used',
+        'auto_renew',
+        'notes',
+    ];
+
+    public function member(): BelongsTo
+    {
+        return $this->belongsTo(Member::class);
+    }
+
+    public function plan(): BelongsTo
+    {
+        return $this->belongsTo(Plan::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function daysRemaining(): int
+    {
+        if ($this->end_date < Carbon::today()) {
+            return 0;
+        }
+
+        return Carbon::today()->diffInDays($this->end_date);
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', SubscriptionStatusEnum::Active);
+    }
+
+    public function scopeExpired($query)
+    {
+        return $query->where('end_date', '<', Carbon::today());
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'start_date' => 'date',
+            'end_date' => 'date',
+            'freeze_start' => 'date',
+            'freeze_end' => 'date',
+            'freeze_days_used' => 'integer',
+            'auto_renew' => 'boolean',
+            'status' => SubscriptionStatusEnum::class,
+        ];
+    }
+}
