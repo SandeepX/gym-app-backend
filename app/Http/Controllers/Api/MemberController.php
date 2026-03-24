@@ -108,7 +108,7 @@ class MemberController
 
             return $this->success(
                 MemberResource::make(
-                    $member->fresh()->load(['user', 'activeSubscription.plan'])
+                    $member->fresh()?->load(['user', 'activeSubscription.plan'])
                 ),
                 'Member updated successfully.'
             );
@@ -130,7 +130,7 @@ class MemberController
             $member->delete();
         });
 
-        return $this->success(message: 'Member deleted successfully.');
+        return $this->success([],message: 'Member deleted successfully.');
     }
 
     /**

@@ -1,20 +1,20 @@
 # 🏋️ Gym App Backend API
 
-A fully-featured **Gym Management REST API** built with **Laravel 12**, containerized with **Docker**. Designed to handle all gym operations including member management, subscriptions, attendance tracking, payments, trainer assignments, and detailed analytics.
+A fully-featured **Gym Management REST API** built with **Laravel 13**, containerized with **Docker**. Designed to handle all gym operations including member management, subscriptions, attendance tracking, payments, trainer assignments, and detailed analytics.
 
 ---
 
 ## 🚀 Tech Stack
 
-| Technology | Version |
-|---|---|
-| PHP | 8.4 |
-| Laravel | 12.x |
-| PostgreSQL | 15 |
-| Redis | Latest |
-| Docker | Latest |
-| Nginx | Latest |
-| Laravel Sanctum | API Authentication |
+| Technology | Version                      |
+|---|------------------------------|
+| PHP | 8.4                          |
+| Laravel | 13.x                         |
+| PostgreSQL | 15                           |
+| Redis | Latest                       |
+| Docker | Latest                       |
+| Nginx | Latest                       |
+| Laravel Sanctum | API Authentication           |
 | Spatie Permission | Role & Permission Management |
 
 ---

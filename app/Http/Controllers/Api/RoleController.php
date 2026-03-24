@@ -15,7 +15,7 @@ class RoleController
 
     public function index(): JsonResponse
     {
-        $roles = Role::where('guard_name', 'web')
+        $roles = Role::where('guard_name', 'api')
             ->with('permissions')
             ->get()
             ->map(fn($role) => [
@@ -95,7 +95,7 @@ class RoleController
 
     public function permissions(): JsonResponse
     {
-        $permissions = Permission::where('guard_name', 'web')
+        $permissions = Permission::where('guard_name', 'api')
             ->pluck('name')
             ->toArray();
 

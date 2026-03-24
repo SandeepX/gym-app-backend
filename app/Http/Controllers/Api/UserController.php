@@ -28,7 +28,7 @@ class UserController
             ->when($request->is_active, fn ($q) => $q->where('is_active', $request->boolean('is_active'))
             )
             ->latest()
-            ->paginate($request->get('per_page', 15));
+            ->paginate($request->input('per_page', 15));
 
         return $this->success(
             UserResource::collection($users),

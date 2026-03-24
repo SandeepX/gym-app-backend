@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\NotificationServiceInterface;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,8 @@ use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 class AuthController
 {
     use ApiResponseTrait;
+
+    public function __construct(private readonly NotificationServiceInterface $notificationService){}
 
     public function register(RegisterRequest $request): JsonResponse
     {
@@ -31,12 +34,14 @@ class AuthController
 
         $token = $user->createToken('auth_token', ['*'], now()->addDays(30))->plainTextToken;
 
+        $this->notificationService->sendWelcome($user);
+
         return $this->success([
             'user' => new UserResource($user),
             'access_token' => $token,
             'token_type' => 'Bearer',
             'expires_in' => now()->addDays(30)->toIso8601String(),
-        ], 'User registered successfully.', Response::HTTP_CREATED);
+        ], 'User registered successfully.', ResponseAlias::HTTP_CREATED);
     }
 
     /**
@@ -46,21 +51,21 @@ class AuthController
     {
         $user = User::where('email', $request->email)->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        if (!$user || !Hash::check($request->password, $user->password)) {
             return $this->error(
                 'Invalid credentials. Please try again.',
                 ResponseAlias::HTTP_UNAUTHORIZED
             );
         }
 
-        if (! $user->is_active) {
+        if (!$user->is_active) {
             return $this->error(
                 'Your account has been deactivated. Please contact support.',
                 ResponseAlias::HTTP_UNAUTHORIZED
             );
         }
 
-        if (! $request->boolean('remember')) {
+        if (!$request->boolean('remember')) {
             $user->tokens()->delete();
         }
 
@@ -105,7 +110,7 @@ class AuthController
 
         $user = User::find($userId);
 
-        if (! $user) {
+        if (!$user) {
             $this->error('User Not found', 404);
         }
 
@@ -119,11 +124,11 @@ class AuthController
     {
         $user = User::find($userId);
 
-        if (! $user) {
+        if (!$user) {
             $this->error('User not found', 404);
         }
 
-        if (! Hash::check($request->current_password, $user->password)) {
+        if (!Hash::check($request->current_password, $user->password)) {
             $this->error('Current password is incorrect.', Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 

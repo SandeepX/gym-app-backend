@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\PaymentStatusEnum;
+use App\Http\Requests\PaymentRequest;
 use App\Http\Resources\PaymentResource;
 use App\Models\Payment;
+use App\NotificationServiceInterface;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,6 +15,10 @@ use Illuminate\Validation\Rules\Enum;
 class PaymentController
 {
     use ApiResponseTrait;
+
+    public function __construct(
+        private NotificationServiceInterface $notificationService,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -30,28 +36,16 @@ class PaymentController
         );
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(PaymentRequest $request): JsonResponse
     {
-        $request->validate([
-            'member_id' => ['required', 'exists:members,id'],
-            'subscription_id' => ['nullable', 'exists:subscriptions,id'],
-            'amount' => ['required', 'numeric', 'min:0'],
-            'payment_method' => ['required', 'in:cash,card,bank_transfer,online'],
-            'paid_at' => ['nullable', 'date'],
-            'notes' => ['nullable', 'string'],
-        ]);
+        $validatedData = $request->validated();
+        $validatedData['invoice_number'] = Payment::generateSequenceNumber('INV', 'invoice_number');
+        $validatedData['paid_at'] = $request->paid_at ?? now();
+        $validatedData['collected_by'] = $request->user()->id;
 
-        $payment = Payment::create([
-            'invoice_number' => Payment::generateSequenceNumber('INV', 'invoice_number'),
-            'member_id' => $request->member_id,
-            'subscription_id' => $request->subscription_id,
-            'collected_by' => $request->user()->id,
-            'amount' => $request->amount,
-            'payment_method' => $request->payment_method,
-            'status' => PaymentStatusEnum::Paid,
-            'paid_at' => $request->paid_at ?? now(),
-            'notes' => $request->notes,
-        ]);
+        $payment = Payment::create($validatedData);
+
+        $this->notificationService->sendPaymentReceived($payment);
 
         return $this->success(
             PaymentResource::make($payment->load(['member.user', 'subscription.plan'])),
@@ -87,7 +81,7 @@ class PaymentController
     {
         $payment->delete();
 
-        return $this->success(message: 'Payment deleted successfully.');
+        return $this->success([],message: 'Payment deleted successfully.');
     }
 
     public function stats(): JsonResponse

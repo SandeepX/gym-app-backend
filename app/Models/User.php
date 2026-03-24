@@ -50,4 +50,14 @@ class User extends Authenticatable
             'is_active' => 'boolean',
         ];
     }
+    public function routeNotificationForMail(): string
+    {
+        return $this->email;
+    }
+
+    public function routeNotificationForSms(): ?string
+    {
+        return $this->phone ? '+977' . ltrim($this->phone, '0') : null;
+    }
+
 }

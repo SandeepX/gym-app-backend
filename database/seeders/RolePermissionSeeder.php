@@ -2,9 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -79,12 +77,14 @@ class RolePermissionSeeder extends Seeder
             'name' => 'super-admin',
             'guard_name' => 'api',
         ]);
+
         $superAdmin->syncPermissions(Permission::all());
 
         $admin = Role::firstOrCreate([
             'name' => 'admin',
             'guard_name' => 'api',
         ]);
+
         $admin->syncPermissions(
             Permission::where('name', 'not like', '%roles%')->get()
         );
@@ -93,6 +93,7 @@ class RolePermissionSeeder extends Seeder
             'name' => 'receptionist',
             'guard_name' => 'api',
         ]);
+
         $receptionist->syncPermissions([
             'view members',
             'view plans',
@@ -108,6 +109,7 @@ class RolePermissionSeeder extends Seeder
             'name' => 'trainer',
             'guard_name' => 'api',
         ]);
+
         $trainer->syncPermissions([
             'view subscriptions',
             'view attendance',
@@ -130,63 +132,8 @@ class RolePermissionSeeder extends Seeder
             'view plans',
         ]);
 
-        $superAdminUser = User::firstOrCreate(
-            ['email' => 'superadmin@gym.com'],
-            [
-                'name' => 'Super Admin',
-                'password' => Hash::make('password123'),
-                'phone' => '01000000000',
-                'is_active' => true,
-            ]
-        );
-        $superAdminUser->syncRoles(['super-admin']);
-
-        $adminUser = User::firstOrCreate(
-            ['email' => 'admin@gym.com'],
-            [
-                'name' => 'Admin',
-                'password' => Hash::make('password123'),
-                'phone' => '01000000001',
-                'is_active' => true,
-            ]
-        );
-        $adminUser->syncRoles(['admin']);
-
-        $receptionistUser = User::firstOrCreate(
-            ['email' => 'receptionist@gym.com'],
-            [
-                'name' => 'Receptionist',
-                'password' => Hash::make('password123'),
-                'phone' => '01000000002',
-                'is_active' => true,
-            ]
-        );
-        $receptionistUser->syncRoles(['receptionist']);
-
-        $trainerUser = User::firstOrCreate(
-            ['email' => 'trainer@gym.com'],
-            [
-                'name' => 'Trainer',
-                'password' => Hash::make('password123'),
-                'phone' => '01000000003',
-                'is_active' => true,
-            ]
-        );
-
-        $trainerUser->syncRoles(['trainer']);
-
-        $memberUser = User::firstOrCreate(
-            ['email' => 'member@gym.com'],
-            [
-                'name' => 'Member',
-                'password' => Hash::make('password123'),
-                'phone' => '01000000004',
-                'is_active' => true,
-            ]
-        );
-        $memberUser->syncRoles(['member']);
-
         $this->command->info('✅ Roles & permissions seeded!');
+
         $this->command->table(
             ['Role', 'Permissions'],
             Role::with('permissions')->get()->map(fn ($r) => [
