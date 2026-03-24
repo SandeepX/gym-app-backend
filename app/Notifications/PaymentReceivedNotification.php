@@ -14,7 +14,7 @@ class PaymentReceivedNotification extends BaseNotification
     public function toMail(mixed $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('✅ Payment Received - ' . $this->payment->invoice_number)
+            ->subject('✅ Payment Received - '.$this->payment->invoice_number)
             ->greeting("Hello {$notifiable->name}!")
             ->line('We have received your payment. Here are the details:')
             ->line("Invoice: **{$this->payment->invoice_number}**")

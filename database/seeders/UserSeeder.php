@@ -17,33 +17,33 @@ class UserSeeder extends Seeder
         $users = [
             [
                 'email' => 'superadmin@gym.com',
-                'name'  => 'Super Admin',
+                'name' => 'Super Admin',
                 'phone' => '01000000000',
-                'role'  => 'super-admin',
+                'role' => 'super-admin',
             ],
             [
                 'email' => 'admin@gym.com',
-                'name'  => 'Admin',
+                'name' => 'Admin',
                 'phone' => '01000000001',
-                'role'  => 'admin',
+                'role' => 'admin',
             ],
             [
                 'email' => 'receptionist@gym.com',
-                'name'  => 'Receptionist',
+                'name' => 'Receptionist',
                 'phone' => '01000000002',
-                'role'  => 'receptionist',
+                'role' => 'receptionist',
             ],
             [
                 'email' => 'trainer@gym.com',
-                'name'  => 'Trainer',
+                'name' => 'Trainer',
                 'phone' => '01000000003',
-                'role'  => 'trainer',
+                'role' => 'trainer',
             ],
             [
                 'email' => 'member@gym.com',
-                'name'  => 'Member',
+                'name' => 'Member',
                 'phone' => '01000000004',
-                'role'  => 'member',
+                'role' => 'member',
             ],
         ];
 
@@ -51,9 +51,9 @@ class UserSeeder extends Seeder
             $user = User::firstOrCreate(
                 ['email' => $userData['email']],
                 [
-                    'name'      => $userData['name'],
-                    'password'  => Hash::make('password123'),
-                    'phone'     => $userData['phone'],
+                    'name' => $userData['name'],
+                    'password' => Hash::make('password123'),
+                    'phone' => $userData['phone'],
                     'is_active' => true,
                 ]
             );

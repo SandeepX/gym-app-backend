@@ -8,7 +8,7 @@ use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
 trait ApiResponseTrait
 {
-    public function success($data, $message = "Success", $code = ResponseAlias::HTTP_OK): JsonResponse
+    public function success($data, $message = 'Success', $code = ResponseAlias::HTTP_OK): JsonResponse
     {
         $response = [
             'status' => 'success',
@@ -27,14 +27,14 @@ trait ApiResponseTrait
         return response()->json($response, $code);
     }
 
-    public function error($message = "Error", $code = ResponseAlias::HTTP_BAD_REQUEST, $errors = []): JsonResponse
+    public function error($message = 'Error', $code = ResponseAlias::HTTP_BAD_REQUEST, $errors = []): JsonResponse
     {
         $errorMessage = [
             'url' => request()->path(),
             'status' => 'error',
             'code' => $code,
             'message' => $message,
-            'errors' => $errors
+            'errors' => $errors,
         ];
 
         return response()->json($errorMessage, $code);

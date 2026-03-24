@@ -14,11 +14,15 @@ class TwilioSmsChannel
 
     public function send(mixed $notifiable, Notification $notification): void
     {
-        if (!method_exists($notification, 'toSms')) return;
+        if (! method_exists($notification, 'toSms')) {
+            return;
+        }
 
         $to = $notifiable->routeNotificationFor('sms');
 
-        if (!$to) return;
+        if (! $to) {
+            return;
+        }
 
         $message = $notification->toSms($notifiable);
 

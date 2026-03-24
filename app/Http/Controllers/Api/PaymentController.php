@@ -81,7 +81,7 @@ class PaymentController
     {
         $payment->delete();
 
-        return $this->success([],message: 'Payment deleted successfully.');
+        return $this->success([], message: 'Payment deleted successfully.');
     }
 
     public function stats(): JsonResponse

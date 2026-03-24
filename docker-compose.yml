@@ -10,6 +10,7 @@ services:
     depends_on:
       - db
       - redis
+      - mailhog
     restart: unless-stopped
     networks:
       - gym-network
@@ -71,6 +72,15 @@ services:
     ports:
       - "6378:6379"
     restart: unless-stopped
+    networks:
+      - gym-network
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: gym_mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
     networks:
       - gym-network
 

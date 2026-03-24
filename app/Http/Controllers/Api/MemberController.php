@@ -42,10 +42,10 @@ class MemberController
 
         return DB::transaction(function () use ($request, $validatedData) {
             $user = User::create([
-                'name'      => $request->name,
-                'email'     => $request->email,
-                'password'  => Hash::make($request->password ?? Str::random(12)),
-                'phone'     => $request->phone,
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password ?? Str::random(12)),
+                'phone' => $request->phone,
                 'is_active' => true,
             ]);
 
@@ -130,7 +130,7 @@ class MemberController
             $member->delete();
         });
 
-        return $this->success([],message: 'Member deleted successfully.');
+        return $this->success([], message: 'Member deleted successfully.');
     }
 
     /**

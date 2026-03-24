@@ -10,14 +10,16 @@ use Illuminate\Notifications\Notification;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-abstract class BaseNotification extends Notification implements ShouldQueue, GymNotificationInterface
+abstract class BaseNotification extends Notification implements GymNotificationInterface, ShouldQueue
 {
-    use Queueable, InteractsWithQueue, SerializesModels;
+    use InteractsWithQueue, Queueable, SerializesModels;
 
-    public int    $tries  = 3;
-    public int    $backoff = 60;
-//    public string $queue  = 'notifications';
-    public bool   $deleteWhenMissingModels = true;
+    public int $tries = 3;
+
+    public int $backoff = 60;
+
+    //    public string $queue  = 'notifications';
+    public bool $deleteWhenMissingModels = true;
 
     public function via(mixed $notifiable): array
     {

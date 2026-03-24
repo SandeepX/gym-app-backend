@@ -24,7 +24,7 @@ class MemberResource extends JsonResource
             ],
             'health_notes' => $this->health_notes,
 
-            'user' => $this->whenLoaded('user', fn() => [
+            'user' => $this->whenLoaded('user', fn () => [
                 'id' => $this->user->id,
                 'name' => $this->user->name,
                 'email' => $this->user->email,
@@ -32,7 +32,7 @@ class MemberResource extends JsonResource
                 'avatar' => $this->user->avatar,
             ]),
 
-            'active_subscription' => $this->whenLoaded('activeSubscription', fn() => $this->activeSubscription ? [
+            'active_subscription' => $this->whenLoaded('activeSubscription', fn () => $this->activeSubscription ? [
                 'id' => $this->activeSubscription->id,
                 'subscription_number' => $this->activeSubscription->subscription_number,
                 'plan' => [
@@ -48,7 +48,7 @@ class MemberResource extends JsonResource
             ] : null
             ),
 
-            'subscriptions' => $this->whenLoaded('subscriptions', fn() => $this->subscriptions->map(fn($sub) => [
+            'subscriptions' => $this->whenLoaded('subscriptions', fn () => $this->subscriptions->map(fn ($sub) => [
                 'id' => $sub->id,
                 'subscription_number' => $sub->subscription_number,
                 'plan' => $sub->plan?->name,
@@ -61,7 +61,7 @@ class MemberResource extends JsonResource
             ])
             ),
 
-            'payments' => $this->whenLoaded('payments', fn() => $this->payments->map(fn($payment) => [
+            'payments' => $this->whenLoaded('payments', fn () => $this->payments->map(fn ($payment) => [
                 'id' => $payment->id,
                 'invoice_number' => $payment->invoice_number,
                 'amount' => $payment->amount,
@@ -73,7 +73,7 @@ class MemberResource extends JsonResource
             ])
             ),
 
-            'trainers' => $this->whenLoaded('trainers', fn() => $this->trainers->map(fn($trainer) => [
+            'trainers' => $this->whenLoaded('trainers', fn () => $this->trainers->map(fn ($trainer) => [
                 'id' => $trainer->id,
                 'name' => $trainer->name,
                 'email' => $trainer->email,
@@ -81,7 +81,7 @@ class MemberResource extends JsonResource
             ])
             ),
 
-            'attendances' => $this->whenLoaded('attendances', fn() => $this->attendances->map(fn($att) => [
+            'attendances' => $this->whenLoaded('attendances', fn () => $this->attendances->map(fn ($att) => [
                 'id' => $att->id,
                 'check_in' => $att->check_in?->format('Y-m-d H:i'),
                 'check_out' => $att->check_out?->format('Y-m-d H:i'),

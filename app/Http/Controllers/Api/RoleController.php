@@ -18,7 +18,7 @@ class RoleController
         $roles = Role::where('guard_name', 'api')
             ->with('permissions')
             ->get()
-            ->map(fn($role) => [
+            ->map(fn ($role) => [
                 'id' => $role->id,
                 'name' => $role->name,
                 'permissions' => $role->permissions->pluck('name'),

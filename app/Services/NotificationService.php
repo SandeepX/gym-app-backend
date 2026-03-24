@@ -15,7 +15,7 @@ class NotificationService implements NotificationServiceInterface
 {
     public function sendWelcome(User $user): void
     {
-        $this->send($user, new WelcomeNotification(), true);
+        $this->send($user, new WelcomeNotification);
     }
 
     public function sendSubscriptionExpiring(Subscription $subscription, int $daysRemaining): void
@@ -34,17 +34,19 @@ class NotificationService implements NotificationServiceInterface
         );
     }
 
-    private function send(User $user, $notification, bool $sync = false): void
+    private function send(User $user, $notification): void
     {
+        $sync = filter_var(config('notifications.sync'), FILTER_VALIDATE_BOOLEAN);
+
         try {
             $sync
                 ? $user->notifyNow($notification)
                 : $user->notify($notification);
         } catch (\Throwable $e) {
             Log::error('Notification failed', [
-                'user'         => $user->id,
+                'user' => $user->id,
                 'notification' => get_class($notification),
-                'error'        => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }

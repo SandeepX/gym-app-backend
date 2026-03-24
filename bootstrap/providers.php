@@ -1,6 +1,9 @@
 <?php
 
+use App\Providers\AppServiceProvider;
+use App\Providers\TwilioServiceProvider;
+
 return [
-    App\Providers\AppServiceProvider::class,
-    App\Providers\TwilioServiceProvider::class,
+    AppServiceProvider::class,
+    TwilioServiceProvider::class,
 ];
