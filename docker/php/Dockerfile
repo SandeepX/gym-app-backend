@@ -9,6 +9,11 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     libonig-dev \
     libxml2-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libzip-dev \
+    libicu-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Node 22
@@ -16,8 +21,19 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# PHP extensions
-RUN docker-php-ext-install pdo pdo_pgsql mbstring bcmath pcntl
+# Configure and Install PHP extensions
+# We configure GD to handle JPEG and Freetype (fonts on images)
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+    pdo \
+    pdo_pgsql \
+    mbstring \
+    bcmath \
+    pcntl \
+    intl \
+    zip \
+    gd \
+    opcache
 
 # Create group and user
 RUN groupadd -g 1000 gym_app_backend && \
@@ -27,13 +43,6 @@ RUN groupadd -g 1000 gym_app_backend && \
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/gym-app-backend
-
-# Copy project files with correct ownership
-COPY --chown=gym_app_backend:gym_app_backend . /var/www/gym-app-backend
-
-# ✅ Full permissions on everything
-RUN chmod -R 777 /var/www/gym-app-backend && \
-    chown -R gym_app_backend:gym_app_backend /var/www/gym-app-backend
 
 # ✅ Laravel specific folders — read, write, delete, create, move
 RUN mkdir -p /var/www/gym-app-backend/storage/app/public \
@@ -47,6 +56,13 @@ RUN mkdir -p /var/www/gym-app-backend/storage/app/public \
     chmod -R 777 /var/www/gym-app-backend/bootstrap/cache && \
     chown -R gym_app_backend:gym_app_backend /var/www/gym-app-backend/storage && \
     chown -R gym_app_backend:gym_app_backend /var/www/gym-app-backend/bootstrap/cache
+
+# Copy project files with correct ownership
+COPY --chown=gym_app_backend:gym_app_backend . /var/www/gym-app-backend
+
+# ✅ Full permissions on everything
+RUN chmod -R 777 /var/www/gym-app-backend && \
+    chown -R gym_app_backend:gym_app_backend /var/www/gym-app-backend
 
 # Copy entrypoint
 COPY --chown=gym_app_backend:gym_app_backend docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
