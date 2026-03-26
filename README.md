@@ -112,47 +112,15 @@ git clone https://github.com/yourusername/gym-app-backend.git
 cd gym-app-backend
 ```
 
-### 2. Copy environment file
-```bash
-cp .env.example .env
-```
-
-### 3. Update `.env` database credentials
-```env
-DB_CONNECTION=pgsql
-DB_HOST=gym-app-backend-db
-DB_PORT=5432
-DB_DATABASE=gym_app
-DB_USERNAME=postgres
-DB_PASSWORD=admin123
-```
-
-### 4. Start Docker containers
+### 2. Start Docker containers
 ```bash
 docker compose up -d --build
 ```
 
-### 5. Install dependencies
+### . Install dependencies
 ```bash
 docker exec -it gym-app-backend composer install
 ```
-
-### 6. Generate app key
-```bash
-docker exec -it gym-app-backend php artisan key:generate
-```
-
-### 7. Run migrations & seed
-```bash
-docker exec -it gym-app-backend php artisan migrate --seed
-```
-
-### 8. Install Sanctum
-```bash
-docker exec -it gym-app-backend php artisan install:api
-```
-
----
 
 ## 👤 Default Users
 
