@@ -2,12 +2,12 @@
 
 namespace App\Enums;
 
-enum PaymentMethodEnum: string
+enum PaymentMethodEnum: int
 {
-    case Cash = 'cash';
-    case Card = 'card';
-    case BankTransfer = 'bank_transfer';
-    case Online = 'online';
+    case Cash = 1;
+    case Card = 2;
+    case BankTransfer = 3;
+    case Online = 4;
 
     public function label(): string
     {

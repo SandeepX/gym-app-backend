@@ -2,13 +2,13 @@
 
 namespace App\Enums;
 
-enum PlanTypeEnum: string
+enum PlanTypeEnum: int
 {
-    case Monthly = 'monthly';
-    case Quarterly = 'quarterly';
-    case HalfYearly = 'half_yearly';
-    case Yearly = 'yearly';
-    case Custom = 'custom';
+    case Monthly = 1;
+    case Quarterly = 2;
+    case HalfYearly = 3;
+    case Yearly = 4;
+    case Custom = 5;
 
     public function label(): string
     {

@@ -2,11 +2,11 @@
 
 namespace App\Enums;
 
-enum MemberStatusEnum: string
+enum MemberStatusEnum: int
 {
-    case Active = 'active';
-    case Inactive = 'inactive';
-    case Suspended = 'suspended';
+    case Active = 1;
+    case Inactive = 2;
+    case Suspended = 3;
 
     public function label(): string
     {

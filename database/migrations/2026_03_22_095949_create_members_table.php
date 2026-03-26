@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\GenderEnum;
 use App\Enums\MemberStatusEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -20,9 +19,7 @@ return new class extends Migration
                 ->unique()
                 ->index();
             $table->date('date_of_birth')->nullable();
-            $table->enum('gender', GenderEnum::values())
-                ->nullable()
-                ->index();
+            $table->integer('gender')->index();
             $table->text('address')->nullable();
             $table->string('emergency_contact_name')->nullable();
             $table->string('emergency_contact_phone')->nullable();
@@ -30,9 +27,7 @@ return new class extends Migration
             $table->date('join_date')
                 ->default(now()
                 )->index();
-            $table->enum('status', MemberStatusEnum::values())
-                ->default(MemberStatusEnum::Active->value)
-                ->index();
+            $table->integer('status')->default(MemberStatusEnum::Active->value)->index();
 
             $table->softDeletes();
             $table->timestamps();

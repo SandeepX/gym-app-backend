@@ -19,9 +19,7 @@ return new class extends Migration
             $table->foreignId('plan_id')->constrained()->cascadeOnDelete();
             $table->date('start_date')->index();
             $table->date('end_date')->index();
-            $table->enum('status', SubscriptionStatusEnum::values())
-                ->default(SubscriptionStatusEnum::Active->value)
-                ->index();
+            $table->integer('status')->default(SubscriptionStatusEnum::Active->value)->index();
             $table->date('freeze_start')->nullable()->index();
             $table->date('freeze_end')->nullable()->index();
             $table->integer('freeze_days_used')->default(0);

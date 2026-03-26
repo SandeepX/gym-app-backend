@@ -2,12 +2,12 @@
 
 namespace App\Enums;
 
-enum SubscriptionStatusEnum: string
+enum SubscriptionStatusEnum: int
 {
-    case Active = 'active';
-    case Expired = 'expired';
-    case Frozen = 'frozen';
-    case Cancelled = 'cancelled';
+    case Active = 1;
+    case Expired = 2;
+    case Frozen = 3;
+    case Cancelled = 4;
 
     public function label(): string
     {

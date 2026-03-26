@@ -20,12 +20,8 @@ return new class extends Migration
             $table->foreignId('subscription_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('collected_by')->nullable()->constrained('users')->nullOnDelete();
             $table->decimal('amount', 10, 2);
-            $table->enum('payment_method', PaymentMethodEnum::values())
-                ->default(PaymentMethodEnum::Cash->value)
-                ->index();
-            $table->enum('status', PaymentStatusEnum::values())
-                ->default(PaymentStatusEnum::Paid->value)
-                ->index();
+            $table->integer('payment_method')->default(PaymentMethodEnum::Cash->value)->index();
+            $table->integer('status')->default(PaymentStatusEnum::Paid->value)->index();
             $table->string('reference_number')->nullable();
             $table->timestamp('paid_at')->nullable()->index();
             $table->text('notes')->nullable();

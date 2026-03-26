@@ -80,6 +80,23 @@ class Member extends Model
         return $query->where('status', MemberStatusEnum::Suspended->value);
     }
 
+    public function measurements(): HasMany
+    {
+        return $this->hasMany(BodyMeasurement::class)->latest('measured_at');
+    }
+
+    public function latestMeasurement(): HasOne
+    {
+        return $this->hasOne(BodyMeasurement::class)->latestOfMany('measured_at');
+    }
+
+    public function workoutPlans(): BelongsToMany
+    {
+        return $this->belongsToMany(WorkoutPlan::class, 'member_workout_plans')
+            ->withPivot(['assigned_by', 'start_date', 'end_date', 'status', 'notes'])
+            ->withTimestamps();
+    }
+
     protected function casts(): array
     {
         return [
