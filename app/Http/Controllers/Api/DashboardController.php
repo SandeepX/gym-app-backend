@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Services\DashboardService;
 use App\Models\Attendance;
 use App\Models\Member;
 use App\Models\Payment;
 use App\Models\Subscription;
+use App\Services\DashboardService;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

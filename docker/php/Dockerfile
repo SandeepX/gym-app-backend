@@ -2,7 +2,13 @@ FROM php:8.4-fpm
 
 # Install system deps
 RUN apt-get update && apt-get install -y \
-    git curl zip unzip libpq-dev libonig-dev libxml2-dev \
+    git \
+    curl \
+    zip \
+    unzip \
+    libpq-dev \
+    libonig-dev \
+    libxml2-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Node 22
