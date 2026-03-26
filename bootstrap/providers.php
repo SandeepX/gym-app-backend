@@ -1,9 +1,7 @@
 <?php
 
-use App\Providers\AppServiceProvider;
-use App\Providers\TwilioServiceProvider;
-
 return [
-    AppServiceProvider::class,
-    TwilioServiceProvider::class,
+    App\Providers\AppServiceProvider::class,
+    App\Providers\TelescopeServiceProvider::class,
+    App\Providers\TwilioServiceProvider::class,
 ];

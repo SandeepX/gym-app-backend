@@ -42,6 +42,10 @@ RUN mkdir -p /var/www/gym-app-backend/storage/app/public \
     chown -R gym_app_backend:gym_app_backend /var/www/gym-app-backend/storage && \
     chown -R gym_app_backend:gym_app_backend /var/www/gym-app-backend/bootstrap/cache
 
+# Copy entrypoint
+COPY --chown=gym_app_backend:gym_app_backend docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 USER gym_app_backend
 
 EXPOSE 9000

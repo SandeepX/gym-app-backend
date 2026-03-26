@@ -14,12 +14,6 @@ services:
     restart: unless-stopped
     networks:
       - gym-network
-    entrypoint: >
-      sh -c "chmod -R 777 /var/www/gym-app-backend/storage &&
-             chmod -R 777 /var/www/gym-app-backend/bootstrap/cache &&
-             chown -R gym_app_backend:gym_app_backend /var/www/gym-app-backend/storage &&
-             chown -R gym_app_backend:gym_app_backend /var/www/gym-app-backend/bootstrap/cache &&
-             php-fpm"
 
   nginx:
     image: nginx:latest
