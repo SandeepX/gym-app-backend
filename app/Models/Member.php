@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\GenderEnum;
 use App\Enums\MemberStatusEnum;
+use App\Enums\SubscriptionStatusEnum;
 use App\Traits\GenerateSequenceNumberTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -41,7 +42,9 @@ class Member extends Model
 
     public function activeSubscription(): HasOne
     {
-        return $this->hasOne(Subscription::class)->where('status', 'active')->latest();
+        return $this->hasOne(Subscription::class)
+            ->where('status', SubscriptionStatusEnum::Active)
+            ->latest();
     }
 
     public function latestSubscription(): HasOne
@@ -67,7 +70,7 @@ class Member extends Model
 
     public function scopeActive($query)
     {
-        return $query->where('status', 'active');
+        return $query->where('status', MemberStatusEnum::Active);
     }
 
     public function scopeInactive($query)

@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\Auth\ChangePasswordRequest;
+use App\Http\Requests\Auth\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 
 class UserController
@@ -56,11 +61,54 @@ class UserController
      */
     public function stats(): JsonResponse
     {
-        $stats = Role::withCount('users')->get()->map(fn ($role) => [
+        $stats = Role::withCount('users')
+            ->get()
+            ->map(fn ($role) => [
             'role' => $role->name,
             'total' => $role->users_count,
         ]);
 
         return $this->success($stats, 'User stats retrieved.');
     }
+
+    public function profile(Request $request): JsonResponse
+    {
+        return $this->success([new UserResource($request->user()->load(['roles', 'permissions']))]);
+    }
+
+    public function changePassword(ChangePasswordRequest $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            $this->error('User not found', 404);
+        }
+
+        if (! Hash::check($request->current_password, $user->password)) {
+            return $this->error('Current password is incorrect.', Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $user->update(['password' => Hash::make($request->new_password)]);
+
+        $user->tokens()->where('id', '!=', $request->user()->currentAccessToken()->id)->delete();
+
+        return $this->success([], 'Password changed successfully.');
+    }
+
+    public function updateProfile(UpdateProfileRequest $request, $userId): JsonResponse
+    {
+        $validatedData = $request->validated();
+
+        $user = User::find($userId);
+
+        if (! $user) {
+            $this->error('User Not found', 404);
+        }
+
+        $user->update($validatedData);
+
+        return $this->success([new UserResource($user->fresh()?->load(['roles']))],
+            'Update successful');
+    }
+
 }

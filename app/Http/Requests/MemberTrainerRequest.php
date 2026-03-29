@@ -6,7 +6,7 @@ use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class AssignTrainerRequest extends FormRequest
+class MemberTrainerRequest extends FormRequest
 {
     public function authorize(): bool
     {

@@ -32,28 +32,34 @@ Route::prefix('v1')->group(function () {
 
     Route::middleware(['auth:api', 'check', 'throttle:api'])->group(function () {
 
-        Route::get('users', [UserController::class, 'index']);
-        Route::get('users/by-role', [UserController::class, 'byRole']);
-        Route::get('users/stats', [UserController::class, 'stats']);
+        //Auth
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::post('/refresh', [AuthController::class, 'refresh']);
+        Route::post('/logout-all', [AuthController::class, 'logoutAll']);
+
+        // Users
+        Route::prefix('users')->group(function () {
+            Route::get('/', [UserController::class, 'index']);
+            Route::put('/{userId}', [UserController::class, 'updateProfile']);
+            Route::get('/profile', [UserController::class, 'profile']);
+            Route::get('/by-role', [UserController::class, 'byRole']);
+            Route::get('/stats', [UserController::class, 'stats']);
+            Route::post('/change-password', [UserController::class, 'changePassword']);
+        });
 
         Route::get('/permissions', [RoleController::class, 'permissions']);
         Route::post('/roles/assign', [RoleController::class, 'assignToUser']);
         Route::apiResource('roles', RoleController::class);
 
-        Route::get('/profile', [AuthController::class, 'profile']);
-        Route::put('/profile/{userId}', [AuthController::class, 'updateProfile']);
-        Route::post('/change-password', [AuthController::class, 'changePassword']);
-        Route::post('/refresh', [AuthController::class, 'refresh']);
-        Route::post('/logout', [AuthController::class, 'logout']);
-        Route::post('/logout-all', [AuthController::class, 'logoutAll']);
-
         Route::prefix('members')->group(function () {
-            Route::post('/{member}/assign-trainer', [MemberController::class, 'assignTrainer']);
-            Route::delete('/{member}/remove-trainer', [MemberController::class, 'removeTrainer']);
             Route::get('/stats', [MemberController::class, 'stats']);
             Route::get('/{id}', [MemberController::class, 'show']);
-            Route::post('/delete/{id}', [MemberController::class, 'destroy']);
 
+            // Trainer Assign or Remove
+            Route::post('/{member}/assign-trainer', [MemberController::class, 'assignTrainer']);
+            Route::post('/{member}/remove-trainer', [MemberController::class, 'removeTrainer']);
+
+            Route::post('/delete/{id}', [MemberController::class, 'destroy']);
             Route::apiResource('/', MemberController::class)->except(['show', 'delete', 'edit']);
 
             // Member Body Measurements
@@ -70,6 +76,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/my-members', [TrainerController::class, 'myMembers']);
             Route::post('/{user}/assign-member', [TrainerController::class, 'assignMember']);
             Route::delete('/{user}/remove-member', [TrainerController::class, 'removeMember']);
+
             Route::apiResource('/', TrainerController::class);
         });
 

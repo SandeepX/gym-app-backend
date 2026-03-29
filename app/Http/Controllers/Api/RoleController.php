@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\RoleRequest;
 use App\Models\User;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
@@ -28,17 +29,13 @@ class RoleController
         return $this->success($roles, 'Roles retrieved successfully.');
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(RoleRequest $request): JsonResponse
     {
-        $request->validate([
-            'name' => 'required|string|unique:roles,name',
-            'permissions' => 'nullable|array',
-            'permissions.*' => 'exists:permissions,name',
-        ]);
+        $request->validated();
 
         $role = Role::create([
             'name' => $request->name,
-            'guard_name' => 'web',
+            'guard_name' => 'api',
         ]);
 
         if ($request->permissions) {

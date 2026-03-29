@@ -13,6 +13,7 @@ use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
@@ -102,47 +103,6 @@ class AuthController
 
         return $this->success([], 'Logged out from all devices.', Response::HTTP_OK);
     }
-
-    public function profile(Request $request): JsonResponse
-    {
-        return $this->success([new UserResource($request->user()->load(['roles', 'permissions']))]);
-    }
-
-    public function updateProfile(UpdateProfileRequest $request, $userId): JsonResponse
-    {
-        $validatedData = $request->validated();
-
-        $user = User::find($userId);
-
-        if (! $user) {
-            $this->error('User Not found', 404);
-        }
-
-        $user->update($validatedData);
-
-        return $this->success([new UserResource($user->fresh()?->load(['roles']))],
-            'Update successful');
-    }
-
-    public function changePassword(ChangePasswordRequest $request, $userId): JsonResponse
-    {
-        $user = User::find($userId);
-
-        if (! $user) {
-            $this->error('User not found', 404);
-        }
-
-        if (! Hash::check($request->current_password, $user->password)) {
-            $this->error('Current password is incorrect.', Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        $user->update(['password' => Hash::make($request->new_password)]);
-
-        $user->tokens()->where('id', '!=', $request->user()->currentAccessToken()->id)->delete();
-
-        return $this->success([], 'Password changed successfully.');
-    }
-
     public function refresh(Request $request): JsonResponse
     {
         $user = $request->user();
