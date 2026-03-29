@@ -117,11 +117,6 @@ cd gym-app-backend
 docker compose up -d --build
 ```
 
-### . Install dependencies
-```bash
-docker exec -it gym-app-backend composer install
-```
-
 ## 👤 Default Users
 
 | Role | Email | Password |
@@ -136,110 +131,7 @@ docker exec -it gym-app-backend composer install
 
 ## 📡 API Endpoints
 
-### Auth
-```
-POST   /api/v1/auth/register
-POST   /api/v1/auth/login
-POST   /api/v1/auth/logout
-POST   /api/v1/auth/logout-all
-GET    /api/v1/auth/profile
-PUT    /api/v1/auth/profile
-POST   /api/v1/auth/change-password
-POST   /api/v1/auth/refresh
-```
-
-### Members
-```
-GET    /api/v1/members
-POST   /api/v1/members
-GET    /api/v1/members/{id}
-PUT    /api/v1/members/{id}
-DELETE /api/v1/members/{id}
-GET    /api/v1/members/stats
-POST   /api/v1/members/{id}/assign-trainer
-DELETE /api/v1/members/{id}/remove-trainer
-```
-
-### Plans
-```
-GET    /api/v1/plans
-POST   /api/v1/plans
-GET    /api/v1/plans/{id}
-PUT    /api/v1/plans/{id}
-DELETE /api/v1/plans/{id}
-```
-
-### Subscriptions
-```
-GET    /api/v1/subscriptions
-POST   /api/v1/subscriptions
-GET    /api/v1/subscriptions/{id}
-PUT    /api/v1/subscriptions/{id}
-DELETE /api/v1/subscriptions/{id}
-POST   /api/v1/subscriptions/{id}/freeze
-POST   /api/v1/subscriptions/{id}/unfreeze
-POST   /api/v1/subscriptions/{id}/renew
-```
-
-### Payments
-```
-GET    /api/v1/payments
-POST   /api/v1/payments
-GET    /api/v1/payments/{id}
-PUT    /api/v1/payments/{id}
-DELETE /api/v1/payments/{id}
-GET    /api/v1/payments/stats
-```
-
-### Attendance
-```
-GET    /api/v1/attendance
-POST   /api/v1/attendance/check-in
-POST   /api/v1/attendance/check-out/{id}
-GET    /api/v1/attendance/today
-GET    /api/v1/attendance/member/{id}
-```
-
-### Trainers
-```
-GET    /api/v1/trainers
-POST   /api/v1/trainers
-GET    /api/v1/trainers/{id}
-PUT    /api/v1/trainers/{id}
-DELETE /api/v1/trainers/{id}
-GET    /api/v1/trainers/my-members
-POST   /api/v1/trainers/{id}/assign-member
-DELETE /api/v1/trainers/{id}/remove-member
-```
-
-### Dashboard
-```
-GET    /api/v1/dashboard
-GET    /api/v1/dashboard/revenue
-GET    /api/v1/dashboard/members
-GET    /api/v1/dashboard/attendance
-GET    /api/v1/dashboard/subscriptions
-```
-
-### Reports
-```
-GET    /api/v1/reports/expiring-subscriptions
-GET    /api/v1/reports/expired-subscriptions
-GET    /api/v1/reports/inactive-members
-GET    /api/v1/reports/revenue
-GET    /api/v1/reports/attendance
-```
-
-### Roles & Permissions
-```
-GET    /api/v1/roles
-POST   /api/v1/roles
-GET    /api/v1/roles/{id}
-PUT    /api/v1/roles/{id}
-DELETE /api/v1/roles/{id}
-GET    /api/v1/permissions
-POST   /api/v1/roles/assign
-```
+https://documenter.getpostman.com/view/8481695/2sBXinFpeQ
 
 ---
 

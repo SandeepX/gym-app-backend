@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\PaymentStatusEnum;
 use App\Models\Attendance;
 use App\Models\Member;
 use App\Models\Payment;
@@ -41,7 +42,7 @@ class DashboardController
             COALESCE(SUM(amount), 0)          AS total
         ")
             ->whereYear('paid_at', $year)
-            ->where('status', 'paid')
+            ->where('status', PaymentStatusEnum::Paid)
             ->groupByRaw("EXTRACT(MONTH FROM paid_at), TO_CHAR(paid_at, 'Mon')")
             ->orderByRaw('EXTRACT(MONTH FROM paid_at)')
             ->get();
@@ -66,12 +67,12 @@ class DashboardController
 
         $thisMonth = Payment::whereMonth('paid_at', now()->month)
             ->whereYear('paid_at', now()->year)
-            ->where('status', 'paid')
+            ->where('status', PaymentStatusEnum::Paid)
             ->sum('amount');
 
         $lastMonth = Payment::whereMonth('paid_at', now()->subMonth()->month)
             ->whereYear('paid_at', now()->subMonth()->year)
-            ->where('status', 'paid')
+            ->where('status', PaymentStatusEnum::Paid)
             ->sum('amount');
 
         $growth = $lastMonth > 0
@@ -86,14 +87,15 @@ class DashboardController
                 'last_month' => (float) $lastMonth,
                 'growth' => $growth,
                 'growth_type' => $growth >= 0 ? 'increase' : 'decrease',
-                'yearly_total' => (float) Payment::whereYear('paid_at', $year)->where('status', 'paid')->sum('amount'),
+                'yearly_total' => (float) Payment::whereYear('paid_at', $year)
+                    ->where('status', PaymentStatusEnum::Paid)->sum('amount'),
             ],
             'by_method' => Payment::selectRaw('
                 payment_method,
                 COUNT(*)             AS transactions,
                 COALESCE(SUM(amount), 0) AS total
             ')
-                ->where('status', 'paid')
+                ->where('status', PaymentStatusEnum::Paid)
                 ->whereYear('paid_at', $year)
                 ->groupBy('payment_method')
                 ->get(),
@@ -290,14 +292,18 @@ class DashboardController
 
     public function paymentStats(): JsonResponse
     {
+        $paid     = PaymentStatusEnum::Paid->value;
+        $pending  = PaymentStatusEnum::Pending->value;
+        $refunded = PaymentStatusEnum::Refunded->value;
+
         $stats = Payment::toBase()->selectRaw("
-            COUNT(*)                                                         AS total_transactions,
-            COALESCE(SUM(amount) FILTER (WHERE status = 'paid'), 0)         AS total_revenue,
-            COALESCE(SUM(amount) FILTER (WHERE status = 'pending'), 0)      AS pending_amount,
-            COALESCE(SUM(amount) FILTER (WHERE status = 'refunded'), 0)     AS refunded_amount,
-            COUNT(*) FILTER (WHERE DATE_TRUNC('month', paid_at) = DATE_TRUNC('month', NOW())) AS this_month_transactions,
-            COALESCE(SUM(amount) FILTER (WHERE DATE_TRUNC('month', paid_at) = DATE_TRUNC('month', NOW()) AND status = 'paid'), 0) AS this_month_revenue
-        ")->first();
+        COUNT(*)                                                                                                        AS total_transactions,
+        COALESCE(SUM(amount) FILTER (WHERE status = ?), 0)                                                             AS total_revenue,
+        COALESCE(SUM(amount) FILTER (WHERE status = ?), 0)                                                             AS pending_amount,
+        COALESCE(SUM(amount) FILTER (WHERE status = ?), 0)                                                             AS refunded_amount,
+        COUNT(*)         FILTER (WHERE DATE_TRUNC('month', paid_at) = DATE_TRUNC('month', NOW()))                      AS this_month_transactions,
+        COALESCE(SUM(amount) FILTER (WHERE DATE_TRUNC('month', paid_at) = DATE_TRUNC('month', NOW()) AND status = ?), 0) AS this_month_revenue
+    ", [$paid, $pending, $refunded, $paid])->first();
 
         return $this->success((array) $stats, 'Payment stats retrieved successfully.');
     }

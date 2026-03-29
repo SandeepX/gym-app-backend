@@ -254,8 +254,6 @@ class MemberController
             ], 'Workout plan assigned to member successfully.');
 
         } catch (Exception $e) {
-            dd($e->getMessage());
-
             return $this->error($e->getMessage(), $e->getCode());
         }
     }
