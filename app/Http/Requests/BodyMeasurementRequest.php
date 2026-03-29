@@ -28,7 +28,7 @@ class BodyMeasurementRequest extends FormRequest
             'biceps' => ['nullable', 'numeric', 'min:0'],
             'thighs' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
-            'measured_at' => ['nullable', 'date'],
+            'measured_at' => ['nullable', 'date', 'before_or_equal:today'],
         ];
     }
 }

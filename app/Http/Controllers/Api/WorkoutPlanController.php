@@ -24,7 +24,7 @@ class WorkoutPlanController
             ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
             ->where('is_active', true)
             ->latest()
-            ->paginate($request->get('per_page', 15));
+            ->paginate($request->input('per_page', 15));
 
         return $this->success($plans, 'Workout plans retrieved successfully.');
     }
@@ -120,10 +120,4 @@ class WorkoutPlanController
     /**
      * Get member workout plans.
      */
-    public function memberPlans(Member $member): JsonResponse
-    {
-        $plans = $member->load(['workoutPlans.exercises'])->workoutPlans;
-
-        return $this->success($plans, 'Member workout plans retrieved successfully.');
-    }
 }

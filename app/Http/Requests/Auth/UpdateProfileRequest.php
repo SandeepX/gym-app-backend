@@ -26,6 +26,7 @@ class UpdateProfileRequest extends FormRequest
             'name' => ['required', 'string'],
             'phone' => ['required', 'string'],
             'avatar' => ['nullable', 'string'],
+            'is_active' => ['nullable', 'boolean'],
         ];
     }
 }

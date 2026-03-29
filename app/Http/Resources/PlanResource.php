@@ -26,7 +26,6 @@ class PlanResource extends JsonResource
             'features' => $this->features ?? [],
             'is_active' => $this->is_active,
             'subscriptions_count' => $this->whenCounted('subscriptions'),
-            'created_at' => $this->created_at,
         ];
     }
 }

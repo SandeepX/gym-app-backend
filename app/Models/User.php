@@ -21,11 +21,6 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, HasRoles, Notifiable;
 
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
-    }
-
     public function member(): HasOne
     {
         return $this->hasOne(Member::class, 'user_id', 'id');

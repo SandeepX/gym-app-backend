@@ -89,7 +89,7 @@ class MemberResource extends JsonResource
             ])
             ),
 
-            'created_at' => $this->created_at?->toDateTimeString(),
+            'body_measurements' => $this->whenLoaded('bodyMeasurements', fn () => BodyMeasurementResource::collection($this->measurements)),
         ];
     }
 }

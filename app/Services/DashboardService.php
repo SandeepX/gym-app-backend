@@ -97,7 +97,6 @@ class DashboardService
         return $stats;
     }
 
-
     public function attendanceStats(): array
     {
         $stats = Attendance::toBase()->selectRaw("

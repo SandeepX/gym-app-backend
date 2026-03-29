@@ -64,9 +64,9 @@ class UserController
         $stats = Role::withCount('users')
             ->get()
             ->map(fn ($role) => [
-            'role' => $role->name,
-            'total' => $role->users_count,
-        ]);
+                'role' => $role->name,
+                'total' => $role->users_count,
+            ]);
 
         return $this->success($stats, 'User stats retrieved.');
     }
@@ -110,5 +110,4 @@ class UserController
         return $this->success([new UserResource($user->fresh()?->load(['roles']))],
             'Update successful');
     }
-
 }

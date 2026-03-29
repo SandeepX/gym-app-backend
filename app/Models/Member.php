@@ -68,19 +68,9 @@ class Member extends Model
             ->withTimestamps();
     }
 
-    public function scopeActive($query)
+    public function bodyMeasurements(): HasMany
     {
-        return $query->where('status', MemberStatusEnum::Active);
-    }
-
-    public function scopeInactive($query)
-    {
-        return $query->where('status', MemberStatusEnum::Inactive->value);
-    }
-
-    public function scopeSuspended($query)
-    {
-        return $query->where('status', MemberStatusEnum::Suspended->value);
+        return $this->hasMany(BodyMeasurement::class, 'member_id', 'id')->orderByDesc('measured_at');
     }
 
     public function measurements(): HasMany
@@ -108,5 +98,24 @@ class Member extends Model
             'status' => MemberStatusEnum::class,
             'gender' => GenderEnum::class,
         ];
+    }
+
+    public function scopeFilter($query, array $filters)
+    {
+        return $query
+            ->when(
+                $filters['status'] ?? null,
+                fn ($q) => $q->where('status', $filters['status'])
+            )
+            ->when(
+                $filters['gender'] ?? null,
+                fn ($q) => $q->where('gender', $filters['gender'])
+            )
+            ->when(
+                $filters['search'] ?? null,
+                fn ($q) => $q->whereHas('user', fn ($u) => $u->where('name', 'like', "%{$filters['search']}%")
+                    ->orWhere('email', 'like', "%{$filters['search']}%")
+                )
+            );
     }
 }

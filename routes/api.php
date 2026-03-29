@@ -32,7 +32,7 @@ Route::prefix('v1')->group(function () {
 
     Route::middleware(['auth:api', 'check', 'throttle:api'])->group(function () {
 
-        //Auth
+        // Auth
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/refresh', [AuthController::class, 'refresh']);
         Route::post('/logout-all', [AuthController::class, 'logoutAll']);
@@ -51,6 +51,14 @@ Route::prefix('v1')->group(function () {
         Route::post('/roles/assign', [RoleController::class, 'assignToUser']);
         Route::apiResource('roles', RoleController::class);
 
+        // Plans
+        Route::post('plans/{planId}', [PlanController::class, 'delete']);
+        Route::apiResource('plans', PlanController::class)->except(['destroy', 'edit']);
+
+        // Workout Plans
+        Route::post('workout-plans/{workoutPlan}/assign', [WorkoutPlanController::class, 'assignToMember']);
+        Route::apiResource('workout-plans', WorkoutPlanController::class);
+
         Route::prefix('members')->group(function () {
             Route::get('/stats', [MemberController::class, 'stats']);
             Route::get('/{id}', [MemberController::class, 'show']);
@@ -60,16 +68,14 @@ Route::prefix('v1')->group(function () {
             Route::post('/{member}/remove-trainer', [MemberController::class, 'removeTrainer']);
 
             Route::post('/delete/{id}', [MemberController::class, 'destroy']);
-            Route::apiResource('/', MemberController::class)->except(['show', 'delete', 'edit']);
+            Route::apiResource('/', MemberController::class)->except(['delete', 'edit']);
 
             // Member Body Measurements
-            Route::get('/{member}/measurements', [BodyMeasurementController::class, 'index']);
             Route::post('/{member}/measurements', [BodyMeasurementController::class, 'store']);
+            Route::put('measurements/{measurementId}', [BodyMeasurementController::class, 'update']);
             Route::get('{member}/measurements/progress', [BodyMeasurementController::class, 'progress']);
-            Route::get('{member}/measurements/{measurement}', [BodyMeasurementController::class, 'show']);
-            Route::put('{member}/measurements/{measurement}', [BodyMeasurementController::class, 'update']);
-            Route::delete('{member}/measurements/{measurement}', [BodyMeasurementController::class, 'destroy']);
-            Route::get('{member}/workout-plans', [WorkoutPlanController::class, 'memberPlans']);
+
+            Route::get('{member}/workout-plan-details', [MemberController::class, 'memberWorkoutPlansDetails']);
         });
 
         Route::prefix('trainers')->group(function () {
@@ -79,9 +85,6 @@ Route::prefix('v1')->group(function () {
 
             Route::apiResource('/', TrainerController::class);
         });
-
-        // Plans
-        Route::apiResource('plans', PlanController::class);
 
         // Subscriptions
         Route::prefix('subscriptions')->group(function () {
@@ -103,10 +106,6 @@ Route::prefix('v1')->group(function () {
             Route::get('/member/{member}', [AttendanceController::class, 'memberHistory']);
             Route::apiResource('/', AttendanceController::class);
         });
-
-        // Workout Plans
-        Route::post('workout-plans/{workoutPlan}/assign', [WorkoutPlanController::class, 'assignToMember']);
-        Route::apiResource('workout-plans', WorkoutPlanController::class);
 
         // Equipment
         Route::get('equipment/stats', [EquipmentController::class, 'stats']);

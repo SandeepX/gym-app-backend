@@ -3,15 +3,17 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\MemberStatusEnum;
-use App\Http\Requests\MemberTrainerRequest;
 use App\Http\Requests\MemberRequest;
+use App\Http\Requests\MemberTrainerRequest;
+use App\Http\Resources\MemberPlanDetailResource;
 use App\Http\Resources\MemberResource;
 use App\Models\Member;
 use App\Models\User;
+use App\Services\MemberService;
 use App\Traits\ApiResponseTrait;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -20,20 +22,17 @@ class MemberController
 {
     use ApiResponseTrait;
 
+    public function __construct(public MemberService $memberService) {}
+
     public function index(Request $request): JsonResponse
     {
         $members = Member::with([
             'user',
-            'activeSubscription.plan'
+            'activeSubscription.plan',
         ])
-            ->when($request->search, fn($q) => $q->whereHas('user', fn($u) => $u->where('name', 'like', "%{$request->search}%")
-                ->orWhere('email', 'like', "%{$request->search}%")
-            ))
-            ->when($request->status, fn($q) => $q->where('status', $request->status))
-            ->when($request->gender, fn($q) => $q->where('gender', $request->gender))
+            ->filter($request->only(['status', 'gender', 'search']))
             ->latest()
             ->paginate($request->input('per_page', 15));
-
 
         return $this->success(
             MemberResource::collection($members),
@@ -77,52 +76,53 @@ class MemberController
 
     public function show($memberId): JsonResponse
     {
-        $member = Member::with([
-            'user',
-            'activeSubscription.plan',
-            'subscriptions.plan',
-            'payments.subscription.plan',
-            'trainers',
-            'attendances' => fn($q) => $q->limit(10),
-        ])->find($memberId);
+        try {
+            $member = $this->memberService->getMemberDetailById($memberId, [
+                'user',
+                'activeSubscription.plan',
+                'subscriptions.plan',
+                'payments.subscription.plan',
+                'trainers',
+                'bodyMeasurements',
+                'workoutPlans.exercises',
+                'attendances' => fn ($q) => $q->limit(10),
+            ]);
 
-        if (!$member) {
-            return $this->error('Member not found.', 404);
+            return $this->success(new MemberResource($member), 'Member retrieved successfully.');
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
         }
 
-        return $this->success(new MemberResource($member), 'Member retrieved successfully.');
     }
 
     public function destroy($memberId): JsonResponse
     {
-        $member = Member::find($memberId);
+        try {
+            $member = $this->memberService->getMemberDetailById($memberId);
 
-        if (!$member) {
-            return $this->error('Member not found.', 404);
+            DB::transaction(function () use ($member) {
+                $member->trainers()->detach();
+
+                $member->user->update(['is_active' => false]);
+
+                $member->update([
+                    'status' => MemberStatusEnum::Inactive,
+                ]);
+
+                $member->delete();
+            });
+
+            return $this->success([], message: 'Member deleted successfully.');
+
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
         }
-
-        DB::transaction(function () use ($member) {
-            $member->trainers()->detach();
-
-            $member->user->update(['is_active' => false]);
-
-            $member->update([
-                'status' => MemberStatusEnum::Inactive
-            ]);
-
-            $member->delete();
-        });
-
-        return $this->success([], message: 'Member deleted successfully.');
     }
 
     public function update(MemberRequest $request, $memberId): JsonResponse
     {
-        $member = Member::find($memberId);
+        $member = $this->memberService->getMemberDetailById($memberId);
 
-        if(!$member){
-            return $this->error('Member Detail not found', Response::HTTP_NOT_FOUND);
-        }
         return DB::transaction(function () use ($request, $member) {
 
             $member->user->update($request->only(['name', 'phone']));
@@ -148,11 +148,7 @@ class MemberController
      */
     public function assignTrainer(MemberTrainerRequest $request, $memberId): JsonResponse
     {
-        $member = Member::find($memberId);
-
-        if(!$member){
-            return $this->error('Member Detail Not found', Response::HTTP_NOT_FOUND);
-        }
+        $member = $this->memberService->getMemberDetailById($memberId, ['trainers']);
 
         $trainer = User::find($request->trainer_id);
 
@@ -174,15 +170,11 @@ class MemberController
      */
     public function removeTrainer(MemberTrainerRequest $request, $memberId): JsonResponse
     {
-        $member = Member::find($memberId);
-
-        if(!$member){
-            return $this->error('Member Detail Not found', Response::HTTP_NOT_FOUND);
-        }
+        $member = $this->memberService->getMemberDetailById($memberId, ['trainers']);
 
         $trainer = User::findOrFail($request->trainer_id);
 
-        if (!$member->trainers()->where('user_id', $trainer->id)->exists()) {
+        if (! $member->trainers()->where('user_id', $trainer->id)->exists()) {
             return $this->error('This trainer is not assigned to the member.', 422);
         }
 
@@ -210,5 +202,12 @@ class MemberController
         ])->first();
 
         return $this->success((array) $stats, 'Member stats retrieved successfully.');
+    }
+
+    public function memberWorkoutPlansDetails($memberId): JsonResponse
+    {
+        $memberWorkoutPlan = $this->memberService->getMemberDetailById($memberId, ['workoutPlans.exercises']);
+
+        return $this->success(new MemberPlanDetailResource($memberWorkoutPlan), 'Member workout plans retrieved successfully.');
     }
 }

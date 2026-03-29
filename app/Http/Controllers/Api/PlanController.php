@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\SubscriptionStatusEnum;
 use App\Http\Requests\PlanRequest;
 use App\Http\Resources\PlanResource;
 use App\Models\Plan;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class PlanController
 {
@@ -16,58 +18,63 @@ class PlanController
     public function index(Request $request): JsonResponse
     {
         $plans = Plan::withCount('subscriptions')
-            ->when($request->type, fn ($q) => $q->where('type', $request->type))
-            ->when($request->is_active, fn ($q) => $q->where('is_active', $request->boolean('is_active')))
-            ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
+            ->filter($request->only(['type', 'is_active', 'search']))
             ->latest()
-            ->paginate($request->get('per_page', 15));
+            ->paginate($request->input('per_page', 15));
 
-        return $this->success(
-            PlanResource::collection($plans),
-            'Plans retrieved successfully.'
-        );
+        return $this->success(PlanResource::collection($plans), 'Plans retrieved successfully.');
     }
 
     public function store(PlanRequest $request): JsonResponse
     {
         $plan = Plan::create($request->validated());
 
-        return $this->success(
-            PlanResource::make($plan),
-            'Plan created successfully.',
-            201
+        return $this->success(new PlanResource($plan), 'Plan created successfully.', Response::HTTP_CREATED
         );
     }
 
-    public function show(Plan $plan): JsonResponse
+    public function show($planId): JsonResponse
     {
-        return $this->success(
-            PlanResource::make($plan->loadCount('subscriptions')),
-            'Plan retrieved successfully.'
-        );
+        $plan = Plan::withCount('subscriptions')->find($planId);
+
+        if (! $plan) {
+            return $this->error('Plan not found', Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->success(new PlanResource($plan), 'Plan retrieved successfully.');
     }
 
-    public function update(PlanRequest $request, Plan $plan): JsonResponse
+    public function update(PlanRequest $request, $planId): JsonResponse
     {
-        $plan->update($request->validated());
+        $validatedData = $request->validated();
 
-        return $this->success(
-            PlanResource::make($plan->fresh()),
-            'Plan updated successfully.'
-        );
+        $plan = Plan::find($planId);
+
+        if (! $plan) {
+            return $this->error('Plan not found', Response::HTTP_NOT_FOUND);
+        }
+
+        $plan->update($validatedData);
+
+        return $this->success(new PlanResource($plan->fresh()), 'Plan updated successfully.');
     }
 
-    public function destroy(Plan $plan): JsonResponse
+    public function delete($planId): JsonResponse
     {
-        if ($plan->subscriptions()->where('status', 'active')->exists()) {
-            return $this->error(
-                'Cannot delete plan with active subscriptions.',
-                422
+        $plan = Plan::with('subscriptions')->find($planId);
+
+        if (! $plan) {
+            return $this->error('Plan not found', Response::HTTP_NOT_FOUND);
+        }
+
+        if ($plan->subscriptions()->where('status', SubscriptionStatusEnum::Active)->exists()) {
+            return $this->error('Cannot delete plan with active subscriptions.',
+                Response::HTTP_UNPROCESSABLE_ENTITY
             );
         }
 
         $plan->delete();
 
-        return $this->success(message: 'Plan deleted successfully.');
+        return $this->success([], message: 'Plan deleted successfully.');
     }
 }
