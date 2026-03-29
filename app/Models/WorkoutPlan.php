@@ -49,4 +49,12 @@ class WorkoutPlan extends Model
             'difficulty' => WorkOutDifficultyLevelEnum::class,
         ];
     }
+
+    public function scopeFilter($query, array $filters)
+    {
+        return $query
+            ->where('is_active', true)
+            ->when($filters['difficulty'] ?? null, fn ($q) => $q->where('difficulty', $filters['difficulty']))
+            ->when($filters['search'] ?? null, fn ($q) => $q->where('name', 'like', "%{$filters['search']}%"));
+    }
 }

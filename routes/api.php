@@ -56,8 +56,8 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('plans', PlanController::class)->except(['destroy', 'edit']);
 
         // Workout Plans
-        Route::post('workout-plans/{workoutPlan}/assign', [WorkoutPlanController::class, 'assignToMember']);
-        Route::apiResource('workout-plans', WorkoutPlanController::class);
+        Route::post('workout-plans/{workoutPlanId}', [WorkoutPlanController::class, 'delete']);
+        Route::apiResource('workout-plans', WorkoutPlanController::class)->except(['edit', 'destroy']);
 
         Route::prefix('members')->group(function () {
             Route::get('/stats', [MemberController::class, 'stats']);
@@ -75,6 +75,8 @@ Route::prefix('v1')->group(function () {
             Route::put('measurements/{measurementId}', [BodyMeasurementController::class, 'update']);
             Route::get('{member}/measurements/progress', [BodyMeasurementController::class, 'progress']);
 
+            // member workout plan
+            Route::post('workout-plans/assign', [MemberController::class, 'assignToMember']);
             Route::get('{member}/workout-plan-details', [MemberController::class, 'memberWorkoutPlansDetails']);
         });
 
@@ -95,7 +97,6 @@ Route::prefix('v1')->group(function () {
         });
 
         // Payments
-        Route::get('payments/stats', [PaymentController::class, 'stats'])->name('payments.stats');
         Route::apiResource('payments', PaymentController::class);
 
         // Attendance
@@ -119,6 +120,8 @@ Route::prefix('v1')->group(function () {
             Route::get('/members', [DashboardController::class, 'members']);
             Route::get('/attendance', [DashboardController::class, 'attendance']);
             Route::get('/subscriptions', [DashboardController::class, 'subscriptions']);
+            Route::get('/payments', [DashboardController::class, 'paymentStats']);
+
         });
 
         Route::prefix('reports')->name('reports.')->group(function () {

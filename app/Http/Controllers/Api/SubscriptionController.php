@@ -23,7 +23,7 @@ class SubscriptionController
             ->when($request->member_id, fn ($q) => $q->where('member_id', $request->member_id))
             ->when($request->plan_id, fn ($q) => $q->where('plan_id', $request->plan_id))
             ->latest()
-            ->paginate($request->get('per_page', 15));
+            ->paginate($request->input('per_page', 15));
 
         return $this->success(
             SubscriptionResource::collection($subscriptions),
@@ -83,7 +83,7 @@ class SubscriptionController
         $subscription->update(['status' => SubscriptionStatusEnum::Cancelled]);
         $subscription->delete();
 
-        return $this->success(message: 'Subscription cancelled successfully.');
+        return $this->success([], message: 'Subscription cancelled successfully.');
     }
 
     public function freeze(Request $request, Subscription $subscription): JsonResponse

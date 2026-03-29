@@ -287,4 +287,18 @@ class DashboardController
             'expiring_soon' => $expiringSoon,
         ], 'Subscription analytics retrieved successfully.');
     }
+
+    public function paymentStats(): JsonResponse
+    {
+        $stats = Payment::toBase()->selectRaw("
+            COUNT(*)                                                         AS total_transactions,
+            COALESCE(SUM(amount) FILTER (WHERE status = 'paid'), 0)         AS total_revenue,
+            COALESCE(SUM(amount) FILTER (WHERE status = 'pending'), 0)      AS pending_amount,
+            COALESCE(SUM(amount) FILTER (WHERE status = 'refunded'), 0)     AS refunded_amount,
+            COUNT(*) FILTER (WHERE DATE_TRUNC('month', paid_at) = DATE_TRUNC('month', NOW())) AS this_month_transactions,
+            COALESCE(SUM(amount) FILTER (WHERE DATE_TRUNC('month', paid_at) = DATE_TRUNC('month', NOW()) AND status = 'paid'), 0) AS this_month_revenue
+        ")->first();
+
+        return $this->success((array) $stats, 'Payment stats retrieved successfully.');
+    }
 }

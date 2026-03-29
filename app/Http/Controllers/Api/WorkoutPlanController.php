@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\MemberWorkoutPlanEnum;
-use App\Http\Requests\AssignMemberToWorkOutPlanRequest;
 use App\Http\Requests\UpdateWorkoutPlanRequest;
 use App\Http\Requests\WorkoutPlanRequest;
-use App\Models\Member;
+use App\Http\Resources\WorkoutResource;
 use App\Models\WorkoutPlan;
 use App\Traits\ApiResponseTrait;
-use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use RuntimeException;
+use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
 class WorkoutPlanController
 {
@@ -19,21 +20,19 @@ class WorkoutPlanController
 
     public function index(Request $request): JsonResponse
     {
-        $plans = WorkoutPlan::with(['createdBy:id,name', 'exercises'])
-            ->when($request->difficulty, fn ($q) => $q->where('difficulty', $request->difficulty))
-            ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
-            ->where('is_active', true)
+        $workoutPlans = WorkoutPlan::with(['createdBy:id,name', 'exercises'])
+            ->filter($request->only(['difficulty', 'search']))
             ->latest()
             ->paginate($request->input('per_page', 15));
 
-        return $this->success($plans, 'Workout plans retrieved successfully.');
+        return $this->success(WorkoutResource::collection($workoutPlans), 'Workout plans retrieved successfully.');
     }
 
     public function store(WorkoutPlanRequest $request): JsonResponse
     {
         $request->validated();
 
-        $plan = WorkoutPlan::create([
+        $workoutPlan = WorkoutPlan::create([
             ...$request->only(['name', 'description', 'difficulty', 'duration_weeks', 'days_per_week', 'goals']),
             'created_by' => $request->user()->id,
             'is_active' => true,
@@ -41,83 +40,68 @@ class WorkoutPlanController
 
         if ($request->exercises) {
             foreach ($request->exercises as $exercise) {
-                $plan->exercises()->create($exercise);
+                $workoutPlan->exercises()->create($exercise);
             }
         }
 
-        return $this->success(
-            $plan->load(['createdBy:id,name', 'exercises']),
+        $workoutPlan->load(['exercises']);
+
+        return $this->success(new WorkoutResource($workoutPlan),
             'Workout plan created successfully.',
-            201
+            Response::HTTP_CREATED
         );
     }
 
-    public function show(WorkoutPlan $workoutPlan): JsonResponse
+    public function show($workoutPlanId): JsonResponse
     {
-        return $this->success(
-            $workoutPlan->load(['createdBy:id,name', 'exercises', 'members.user:id,name']),
+        $workoutPlan = WorkoutPlan::with([
+            'createdBy:id,name',
+            'exercises',
+            'members.user:id,name',
+        ])->find($workoutPlanId);
+
+        if (! $workoutPlan) {
+            $this->error('Workout plan not found', Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->success(new WorkoutResource($workoutPlan),
             'Workout plan retrieved successfully.'
         );
     }
 
-    public function update(UpdateWorkoutPlanRequest $request, WorkoutPlan $workoutPlan): JsonResponse
+    public function update(UpdateWorkoutPlanRequest $request, $workoutPlanId): JsonResponse
     {
-        $request->validated();
+        try {
+            $request->validated();
 
-        $workoutPlan->update($request->validated());
+            $workoutPlan = WorkoutPlan::with('exercises')->find($workoutPlanId);
 
-        return $this->success(
-            $workoutPlan->fresh()?->load(['createdBy:id,name', 'exercises']),
-            'Workout plan updated successfully.'
-        );
+            if (! $workoutPlan) {
+                throw new RuntimeException('Workout plan not found', ResponseAlias::HTTP_NOT_FOUND);
+            }
+
+            $workoutPlan->update($request->validated());
+
+            return $this->success(
+                new WorkoutResource($workoutPlan),
+                'Workout plan updated successfully.'
+            );
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+
     }
 
-    public function destroy(WorkoutPlan $workoutPlan): JsonResponse
+    public function delete($workoutPlanId): JsonResponse
     {
+        $workoutPlan = WorkoutPlan::find($workoutPlanId);
+
+        if (! $workoutPlan) {
+            throw new RuntimeException('Workout plan not found', ResponseAlias::HTTP_NOT_FOUND);
+        }
+
         $workoutPlan->delete();
 
         return $this->success([], message: 'Workout plan deleted successfully.');
     }
-
-    /**
-     * Assign workout plan to member.
-     */
-    public function assignToMember(AssignMemberToWorkOutPlanRequest $request, WorkoutPlan $workoutPlan): JsonResponse
-    {
-        $request->validated();
-
-        $member = Member::findOrFail($request->member_id);
-
-        $exists = $workoutPlan->members()
-            ->where('member_id', $member->id)
-            ->wherePivot('status', MemberWorkoutPlanEnum::ACTIVE->value)
-            ->exists();
-
-        if ($exists) {
-            return $this->error('This workout plan is already assigned to the member.', 422);
-        }
-
-        $endDate = Carbon::parse($request->start_date)
-            ->addWeeks($workoutPlan->duration_weeks)
-            ->toDateString();
-
-        $workoutPlan->members()->attach($member->id, [
-            'assigned_by' => $request->user()->id,
-            'start_date' => $request->start_date,
-            'end_date' => $endDate,
-            'status' => MemberWorkoutPlanEnum::ACTIVE->value,
-            'notes' => $request->notes,
-        ]);
-
-        return $this->success([
-            'member' => $member->user->name,
-            'workout_plan' => $workoutPlan->name,
-            'start_date' => $request->start_date,
-            'end_date' => $endDate,
-        ], 'Workout plan assigned to member successfully.');
-    }
-
-    /**
-     * Get member workout plans.
-     */
 }

@@ -3,20 +3,27 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\MemberStatusEnum;
+use App\Enums\MemberWorkoutPlanEnum;
+use App\Http\Requests\AssignMemberToWorkOutPlanRequest;
 use App\Http\Requests\MemberRequest;
 use App\Http\Requests\MemberTrainerRequest;
 use App\Http\Resources\MemberPlanDetailResource;
 use App\Http\Resources\MemberResource;
 use App\Models\Member;
 use App\Models\User;
+use App\Models\WorkoutPlan;
 use App\Services\MemberService;
 use App\Traits\ApiResponseTrait;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use RuntimeException;
+use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
 class MemberController
 {
@@ -209,5 +216,55 @@ class MemberController
         $memberWorkoutPlan = $this->memberService->getMemberDetailById($memberId, ['workoutPlans.exercises']);
 
         return $this->success(new MemberPlanDetailResource($memberWorkoutPlan), 'Member workout plans retrieved successfully.');
+    }
+
+    public function assignToMember(AssignMemberToWorkOutPlanRequest $request): JsonResponse
+    {
+        try {
+            $member = $this->memberService->getMemberDetailById($request->member_id);
+
+            $workoutPlan = WorkoutPlan::find($request->workout_plan_id);
+
+            if (! $workoutPlan) {
+                throw new RuntimeException('Workout plan not found', Response::HTTP_NOT_FOUND);
+            }
+
+            if ($this->isAlreadyAssigned($workoutPlan, $member->id)) {
+                throw new RuntimeException('This workout plan is already assigned to the member.',
+                    ResponseAlias::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            $endDate = Carbon::parse($request->start_date)
+                ->addWeeks($workoutPlan->duration_weeks)
+                ->toDateString();
+
+            $workoutPlan->members()->attach($member->id, [
+                'assigned_by' => $request->user()->id,
+                'start_date' => $request->start_date,
+                'end_date' => $endDate,
+                'status' => MemberWorkoutPlanEnum::ACTIVE->value,
+                'notes' => $request->notes,
+            ]);
+
+            return $this->success([
+                'member' => $member->user->name,
+                'workout_plan' => $workoutPlan->name,
+                'start_date' => $request->start_date,
+                'end_date' => $endDate,
+            ], 'Workout plan assigned to member successfully.');
+
+        } catch (Exception $e) {
+            dd($e->getMessage());
+
+            return $this->error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    private function isAlreadyAssigned(WorkoutPlan $workoutPlan, int $memberId): bool
+    {
+        return $workoutPlan->members()
+            ->where('member_id', $memberId)
+            ->wherePivot('status', MemberWorkoutPlanEnum::ACTIVE->value)
+            ->exists();
     }
 }

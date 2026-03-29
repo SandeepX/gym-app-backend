@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class AssignMemberToWorkOutPlanRequest extends FormRequest
@@ -15,15 +14,20 @@ class AssignMemberToWorkOutPlanRequest extends FormRequest
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
+    protected function prepareForValidation(): void
+    {
+        if (empty($this->start_date)) {
+            $this->merge([
+                'start_date' => now()->toDateString(),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [
-            'member_id' => ['required', 'exists:members,id'],
+            'member_id' => ['required', 'integer', 'exists:members,id'],
+            'workout_plan_id' => ['required', 'integer', 'exists:workout_plans,id'],
             'start_date' => ['required', 'date'],
             'notes' => ['nullable', 'string'],
         ];
