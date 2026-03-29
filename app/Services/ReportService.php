@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\Enums\MemberStatusEnum;
+use App\Enums\PaymentStatusEnum;
+use App\Enums\SubscriptionStatusEnum;
 use App\Models\Attendance;
 use App\Models\Member;
 use App\Models\Payment;
@@ -10,10 +13,10 @@ use Illuminate\Support\Facades\DB;
 
 class ReportService
 {
-    public function expiringSubscriptions(string $fromDate, string $toDate): array
+    public function expiringSubscriptions($fromDate, $toDate): array
     {
         $subscriptions = Subscription::with(['member.user', 'plan'])
-            ->where('status', 'active')
+            ->where('status', SubscriptionStatusEnum::Active)
             ->whereBetween('end_date', [$fromDate, $toDate])
             ->orderBy('end_date')
             ->get();
@@ -24,13 +27,11 @@ class ReportService
         COUNT(*) FILTER (WHERE end_date BETWEEN NOW() AND NOW() + INTERVAL '7 days')  AS expiring_in_7_days,
         COUNT(*) FILTER (WHERE end_date BETWEEN NOW() AND NOW() + INTERVAL '30 days') AS expiring_in_30_days
     ")
-            ->where('status', 'active')
+            ->where('status', SubscriptionStatusEnum::Active)
             ->first();
 
         return [
             'summary' => (array) $summary,
-            'period' => ['from' => $fromDate, 'to' => $toDate],
-            'total' => $subscriptions->count(),
             'data' => $subscriptions->map(fn ($sub) => [
                 'subscription_id' => $sub->id,
                 'subscription_number' => $sub->subscription_number,
@@ -57,14 +58,13 @@ class ReportService
     public function expiredSubscriptions(?string $fromDate, ?string $toDate): array
     {
         $subscriptions = Subscription::with(['member.user', 'plan'])
-            ->where('status', 'expired')
+            ->where('status', SubscriptionStatusEnum::Expired)
             ->when($fromDate, fn ($q) => $q->whereDate('end_date', '>=', $fromDate))
             ->when($toDate, fn ($q) => $q->whereDate('end_date', '<=', $toDate))
             ->orderByDesc('end_date')
             ->get();
 
         return [
-            'period' => ['from' => $fromDate, 'to' => $toDate],
             'total' => $subscriptions->count(),
             'data' => $subscriptions->map(fn ($sub) => [
                 'subscription_number' => $sub->subscription_number,
@@ -83,38 +83,49 @@ class ReportService
 
     public function inactiveMembers(int $days): array
     {
+        $cutoff = now()->subDays($days);
+
         $members = Member::with(['user', 'activeSubscription.plan'])
-            ->where('status', 'active')
-            ->where(function ($q) use ($days) {
+            ->where('status', MemberStatusEnum::Active->value)
+            ->where(function ($q) use ($cutoff) {
+                // Never attended
                 $q->whereDoesntHave('attendances')
-                    ->orWhereHas('attendances', fn ($q) => $q->havingRaw('MAX(check_in) < ?', [now()->subDays($days)])
-                    );
+                    // OR last attendance older than cutoff
+                    ->orWhere(function ($q) use ($cutoff) {
+                        $q->whereHas('attendances')
+                            ->whereNotExists(function ($q) use ($cutoff) {
+                                $q->selectRaw('1')
+                                    ->from('attendances')
+                                    ->whereColumn('attendances.member_id', 'members.id')
+                                    ->where('check_in', '>=', $cutoff);
+                            });
+                    });
             })
             ->get();
 
         return [
             'filter' => "No visit in last {$days} days",
-            'total' => $members->count(),
-            'data' => $members->map(fn ($member) => [
-                'id' => $member->id,
+            'total'  => $members->count(),
+            'data'   => $members->map(fn($member) => [
+                'id'                => $member->id,
                 'membership_number' => $member->membership_number,
-                'name' => $member->user->name,
-                'email' => $member->user->email,
-                'phone' => $member->user->phone,
-                'active_plan' => $member->activeSubscription?->plan?->name ?? 'No active plan',
+                'name'              => $member->user->name,
+                'email'             => $member->user->email,
+                'phone'             => $member->user->phone,
+                'active_plan'       => $member->activeSubscription?->plan?->name ?? 'No active plan',
                 'subscription_ends' => $member->activeSubscription?->end_date?->format('Y-m-d'),
-                'last_visit' => $member->attendances()
-                    ->latest('check_in')
-                    ->value('check_in')?->format('Y-m-d') ?? 'Never',
+                'last_visit'        => $member->attendances()
+                        ->latest('check_in')
+                        ->value('check_in')?->format('Y-m-d') ?? 'Never',
             ])->values(),
         ];
     }
 
-    public function revenue(string $fromDate, string $toDate): array
+    public function revenue(?string $fromDate, ?string $toDate): array
     {
         $payments = Payment::with(['member.user', 'subscription.plan'])
             ->whereBetween('paid_at', [$fromDate, $toDate])
-            ->where('status', 'paid')
+            ->where('status', PaymentStatusEnum::Paid)
             ->get();
 
         $summary = Payment::toBase()->selectRaw('
@@ -125,13 +136,11 @@ class ReportService
         MIN(amount)              AS lowest_payment
     ')
             ->whereBetween('paid_at', [$fromDate, $toDate])
-            ->where('status', 'paid')
+            ->where('status', PaymentStatusEnum::Paid)
             ->first();
 
         return [
-            'period' => ['from' => $fromDate, 'to' => $toDate],
             'summary' => (array) $summary,
-            'total' => $payments->count(),
             'data' => $payments->map(fn ($payment) => [
                 'invoice_number' => $payment->invoice_number,
                 'member' => $payment->member->user->name,
@@ -146,7 +155,7 @@ class ReportService
     /**
      * Attendance report.
      */
-    public function attendance(string $fromDate, string $toDate)
+    public function attendance(?string $fromDate, ?string $toDate)
     {
         $daily = Attendance::selectRaw('
             DATE(check_in)                                                                   AS date,
@@ -168,7 +177,6 @@ class ReportService
             ->first();
 
         return [
-            'period' => ['from' => $fromDate, 'to' => $toDate],
             'summary' => (array) $summary,
             'daily_chart' => $daily,
         ];

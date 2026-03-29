@@ -18,8 +18,8 @@ class ReportController
     public function expiringSubscriptions(Request $request): JsonResponse
     {
         $request->validate([
-            'from_date' => ['required', 'date'],
-            'to_date' => ['required', 'date', 'after_or_equal:from_date'],
+            'from_date' => ['nullable', 'date'],
+            'to_date' => ['nullable', 'date', 'after_or_equal:from_date'],
         ]);
 
         $data = $this->reportService->expiringSubscriptions(
@@ -33,13 +33,13 @@ class ReportController
     public function expiredSubscriptions(Request $request): JsonResponse
     {
         $request->validate([
-            'from_date' => ['required', 'date'],
-            'to_date' => ['required', 'date', 'after_or_equal:from_date'],
+            'from_date' => ['nullable', 'date'],
+            'to_date' => ['nullable', 'date', 'after_or_equal:from_date'],
         ]);
 
         $data = $this->reportService->expiredSubscriptions(
-            fromDate: $request->from_date,
-            toDate  : $request->to_date,
+            fromDate: $request->input('from_date', now()->toDateString()),
+            toDate  : $request->input('to_date', now()->addDays(7)->toDateString()),
         );
 
         return $this->success($data, 'Expired subscriptions report retrieved successfully.');
@@ -61,8 +61,8 @@ class ReportController
     public function revenue(Request $request): JsonResponse
     {
         $request->validate([
-            'from_date' => ['required', 'date'],
-            'to_date' => ['required', 'date', 'after_or_equal:from_date'],
+            'from_date' => ['nullable', 'date'],
+            'to_date' => ['nullable', 'date', 'after_or_equal:from_date'],
         ]);
 
         $data = $this->reportService->revenue(

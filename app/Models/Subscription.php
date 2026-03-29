@@ -52,16 +52,6 @@ class Subscription extends Model
         return Carbon::today()->diffInDays($this->end_date);
     }
 
-    public function scopeActive($query)
-    {
-        return $query->where('status', SubscriptionStatusEnum::Active);
-    }
-
-    public function scopeExpired($query)
-    {
-        return $query->where('end_date', '<', Carbon::today());
-    }
-
     protected function casts(): array
     {
         return [

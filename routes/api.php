@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
 
-    Route::get('/health', fn () => response()->json([
+    Route::get('/health', fn() => response()->json([
         'success' => true,
         'message' => 'Gym API is running.',
         'version' => '1.0.0',
@@ -114,17 +114,17 @@ Route::prefix('v1')->group(function () {
         Route::post('equipment/{equipment}/maintenance', [EquipmentController::class, 'logMaintenance']);
         Route::apiResource('equipment', EquipmentController::class);
 
-        Route::prefix('dashboard')->name('dashboard.')->group(function () {
+        // dashboard
+        Route::prefix('dashboard')->group(function () {
             Route::get('/', [DashboardController::class, 'index']);
             Route::get('/revenue', [DashboardController::class, 'revenue']);
             Route::get('/members', [DashboardController::class, 'members']);
             Route::get('/attendance', [DashboardController::class, 'attendance']);
             Route::get('/subscriptions', [DashboardController::class, 'subscriptions']);
             Route::get('/payments', [DashboardController::class, 'paymentStats']);
-
         });
 
-        Route::prefix('reports')->name('reports.')->group(function () {
+        Route::prefix('reports')->group(function () {
             Route::get('/expiring-subscriptions', [ReportController::class, 'expiringSubscriptions']);
             Route::get('/expired-subscriptions', [ReportController::class, 'expiredSubscriptions']);
             Route::get('/inactive-members', [ReportController::class, 'inactiveMembers']);
