@@ -104,26 +104,4 @@ class EquipmentController
             'data' => $equipment,
         ], 'Equipment due for maintenance.');
     }
-
-    /**
-     * Equipment stats.
-     */
-    public function stats(): JsonResponse
-    {
-        $stats = Equipment::query()
-            ->selectRaw('
-            COUNT(*) AS total,
-            COUNT(*) FILTER (WHERE status = ?) AS active,
-            COUNT(*) FILTER (WHERE status = ?) AS under_maintenance,
-            COUNT(*) FILTER (WHERE status = ?) AS retired,
-            COUNT(*) FILTER (WHERE next_maintenance_date <= NOW()) AS due_for_maintenance
-        ', [
-                EquipmentStatusEnum::Active->value,
-                EquipmentStatusEnum::Maintenance->value,
-                EquipmentStatusEnum::Retired->value,
-            ])
-            ->first();
-
-        return $this->success((array) $stats, 'Equipment stats retrieved.');
-    }
 }

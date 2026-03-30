@@ -105,18 +105,18 @@ class ReportService
 
         return [
             'filter' => "No visit in last {$days} days",
-            'total'  => $members->count(),
-            'data'   => $members->map(fn($member) => [
-                'id'                => $member->id,
+            'total' => $members->count(),
+            'data' => $members->map(fn ($member) => [
+                'id' => $member->id,
                 'membership_number' => $member->membership_number,
-                'name'              => $member->user->name,
-                'email'             => $member->user->email,
-                'phone'             => $member->user->phone,
-                'active_plan'       => $member->activeSubscription?->plan?->name ?? 'No active plan',
+                'name' => $member->user->name,
+                'email' => $member->user->email,
+                'phone' => $member->user->phone,
+                'active_plan' => $member->activeSubscription?->plan?->name ?? 'No active plan',
                 'subscription_ends' => $member->activeSubscription?->end_date?->format('Y-m-d'),
-                'last_visit'        => $member->attendances()
-                        ->latest('check_in')
-                        ->value('check_in')?->format('Y-m-d') ?? 'Never',
+                'last_visit' => $member->attendances()
+                    ->latest('check_in')
+                    ->value('check_in')?->format('Y-m-d') ?? 'Never',
             ])->values(),
         ];
     }

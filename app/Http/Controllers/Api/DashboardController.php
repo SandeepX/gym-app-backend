@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\EquipmentStatusEnum;
 use App\Enums\PaymentStatusEnum;
 use App\Models\Attendance;
+use App\Models\Equipment;
 use App\Models\Member;
 use App\Models\Payment;
 use App\Models\Subscription;
@@ -292,8 +294,8 @@ class DashboardController
 
     public function paymentStats(): JsonResponse
     {
-        $paid     = PaymentStatusEnum::Paid->value;
-        $pending  = PaymentStatusEnum::Pending->value;
+        $paid = PaymentStatusEnum::Paid->value;
+        $pending = PaymentStatusEnum::Pending->value;
         $refunded = PaymentStatusEnum::Refunded->value;
 
         $stats = Payment::toBase()->selectRaw("
@@ -306,5 +308,24 @@ class DashboardController
     ", [$paid, $pending, $refunded, $paid])->first();
 
         return $this->success((array) $stats, 'Payment stats retrieved successfully.');
+    }
+
+    public function equipmentStats(): JsonResponse
+    {
+        $stats = Equipment::query()
+            ->selectRaw('
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE status = ?) AS active,
+            COUNT(*) FILTER (WHERE status = ?) AS under_maintenance,
+            COUNT(*) FILTER (WHERE status = ?) AS retired,
+            COUNT(*) FILTER (WHERE next_maintenance_date <= NOW()) AS due_for_maintenance
+        ', [
+                EquipmentStatusEnum::Active->value,
+                EquipmentStatusEnum::Maintenance->value,
+                EquipmentStatusEnum::Retired->value,
+            ])
+            ->first();
+
+        return $this->success((array) $stats, 'Equipment stats retrieved.');
     }
 }

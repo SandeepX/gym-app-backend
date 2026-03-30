@@ -31,7 +31,7 @@ class RegisterRequest extends FormRequest
                 'confirmed',
                 Password::min(8)->letters()->numbers(),
             ],
-            'phone' => ['required', 'string', 'max:20'],
+            'phone' => ['required', 'string', 'max:20', 'unique:users,phone'],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'is_active' => ['nullable', 'boolean'],
         ];

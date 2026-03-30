@@ -31,11 +31,9 @@ class MemberController
     use ApiResponseTrait;
 
     public function __construct(
-        public MemberService                          $memberService,
+        public MemberService $memberService,
         private readonly NotificationServiceInterface $notificationService
-    )
-    {
-    }
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -81,8 +79,7 @@ class MemberController
 
             $this->notificationService->sendWelcome($user);
 
-            return $this->success(
-                new MemberResource($member->load('user')),
+            return $this->success(new MemberResource($member->load('user')),
                 'Member created successfully.',
                 ResponseAlias::HTTP_CREATED
             );
@@ -100,7 +97,7 @@ class MemberController
                 'trainers',
                 'bodyMeasurements',
                 'workoutPlans.exercises',
-                'attendances' => fn($q) => $q->limit(10),
+                'attendances' => fn ($q) => $q->limit(10),
             ]);
 
             return $this->success(new MemberResource($member), 'Member retrieved successfully.');
@@ -152,15 +149,12 @@ class MemberController
                 'status',
             ]));
 
-            return $this->success(new MemberResource($member->fresh()?->load(['user', 'activeSubscription.plan'])),
-                'Member updated successfully.'
-            );
+            $member->fresh()?->load(['user', 'activeSubscription.plan']);
+
+            return $this->success(new MemberResource($member), 'Member updated successfully.');
         });
     }
 
-    /**
-     * Assign a trainer to a member.
-     */
     public function assignTrainer(MemberTrainerRequest $request, $memberId): JsonResponse
     {
         $member = $this->memberService->getMemberDetailById($memberId, ['trainers']);
@@ -189,7 +183,7 @@ class MemberController
 
         $trainer = User::findOrFail($request->trainer_id);
 
-        if (!$member->trainers()->where('user_id', $trainer->id)->exists()) {
+        if (! $member->trainers()->where('user_id', $trainer->id)->exists()) {
             return $this->error('This trainer is not assigned to the member.', 422);
         }
 
@@ -216,7 +210,7 @@ class MemberController
             MemberStatusEnum::Suspended->value,
         ])->first();
 
-        return $this->success((array)$stats, 'Member stats retrieved successfully.');
+        return $this->success((array) $stats, 'Member stats retrieved successfully.');
     }
 
     public function memberWorkoutPlansDetails($memberId): JsonResponse
@@ -233,7 +227,7 @@ class MemberController
 
             $workoutPlan = WorkoutPlan::find($request->workout_plan_id);
 
-            if (!$workoutPlan) {
+            if (! $workoutPlan) {
                 throw new RuntimeException('Workout plan not found', Response::HTTP_NOT_FOUND);
             }
 
