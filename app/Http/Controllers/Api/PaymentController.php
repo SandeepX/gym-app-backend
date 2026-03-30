@@ -10,6 +10,7 @@ use App\NotificationServiceInterface;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Validation\Rules\Enum;
 
 class PaymentController
@@ -17,16 +18,13 @@ class PaymentController
     use ApiResponseTrait;
 
     public function __construct(
-        private NotificationServiceInterface $notificationService,
+        private readonly NotificationServiceInterface $notificationService,
     ) {}
 
     public function index(Request $request): JsonResponse
     {
         $payments = Payment::with(['member.user', 'subscription.plan', 'collectedBy'])
-            ->when($request->status, fn ($q) => $q->where('status', $request->status))
-            ->when($request->member_id, fn ($q) => $q->where('member_id', $request->member_id))
-            ->when($request->from_date, fn ($q) => $q->whereDate('paid_at', '>=', $request->from_date))
-            ->when($request->to_date, fn ($q) => $q->whereDate('paid_at', '<=', $request->to_date))
+            ->applyFilters($request)
             ->latest()
             ->paginate($request->input('per_page', 15));
 
@@ -38,47 +36,69 @@ class PaymentController
 
     public function store(PaymentRequest $request): JsonResponse
     {
-        $validatedData = $request->validated();
-        $validatedData['invoice_number'] = Payment::generateSequenceNumber('INV', 'invoice_number');
-        $validatedData['paid_at'] = $request->paid_at ?? now();
-        $validatedData['collected_by'] = $request->user()->id;
-
-        $payment = Payment::create($validatedData);
+        $payment = Payment::create([
+            ...$request->validated(),
+            'invoice_number' => Payment::generateSequenceNumber('INV', 'invoice_number'),
+            'paid_at' => $request->paid_at ?? now(),
+            'collected_by' => $request->user()->id,
+        ]);
 
         $this->notificationService->sendPaymentReceived($payment);
 
+        $payment->load(['member.user', 'subscription.plan']);
+
         return $this->success(
-            PaymentResource::make($payment->load(['member.user', 'subscription.plan'])),
+            new PaymentResource($payment),
             'Payment recorded successfully.',
-            201
+            Response::HTTP_CREATED
         );
     }
 
-    public function show(Payment $payment): JsonResponse
+    public function show($paymentId): JsonResponse
     {
+        $payment = Payment::with(['member.user', 'subscription.plan', 'collectedBy'])->find($paymentId);
+        if (! $payment) {
+            return $this->error('Payment not found.', Response::HTTP_NOT_FOUND);
+        }
+
         return $this->success(
-            PaymentResource::make($payment->load(['member.user', 'subscription.plan', 'collectedBy'])),
+            new PaymentResource($payment),
             'Payment retrieved successfully.'
         );
     }
 
-    public function update(Request $request, Payment $payment): JsonResponse
+    public function update(Request $request, $paymentId): JsonResponse
     {
-        $request->validate([
-            'status' => ['required', new Enum(PaymentStatusEnum::class)],
-            'notes' => ['nullable', 'string'],
-        ]);
+        try {
+            $request->validate([
+                'status' => ['required', new Enum(PaymentStatusEnum::class)],
+                'notes' => ['nullable', 'string'],
+            ]);
 
-        $payment->update($request->only(['status', 'notes']));
+            $payment = Payment::find($paymentId);
 
-        return $this->success(
-            PaymentResource::make($payment->fresh()),
-            'Payment updated successfully.'
-        );
+            if (! $payment) {
+                return $this->error('Payment not found.', Response::HTTP_NOT_FOUND);
+            }
+
+            $payment->update($request->only(['status', 'notes']));
+
+            return $this->success(
+                PaymentResource::make($payment->fresh()),
+                'Payment updated successfully.'
+            );
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
-    public function destroy(Payment $payment): JsonResponse
+    public function destroy($paymentId): JsonResponse
     {
+        $payment = Payment::find($paymentId);
+        if (! $payment) {
+            return $this->error('Payment not found.', Response::HTTP_NOT_FOUND);
+        }
+
         $payment->delete();
 
         return $this->success([], message: 'Payment deleted successfully.');
