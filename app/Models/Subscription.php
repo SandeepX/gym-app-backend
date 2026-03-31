@@ -5,10 +5,12 @@ namespace App\Models;
 use App\Enums\SubscriptionStatusEnum;
 use App\Traits\GenerateSequenceNumberTrait;
 use Carbon\Carbon;
+use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Http\Request;
 
 class Subscription extends Model
 {
@@ -63,5 +65,13 @@ class Subscription extends Model
             'auto_renew' => 'boolean',
             'status' => SubscriptionStatusEnum::class,
         ];
+    }
+
+    public function scopeApplyFilters(Builder $query, Request $request): Builder
+    {
+        return $query
+            ->when($request->status, fn ($q) => $q->where('status', $request->status))
+            ->when($request->member_id, fn ($q) => $q->where('member_id', $request->member_id))
+            ->when($request->plan_id, fn ($q) => $q->whereDate('plan_id', '>=', $request->plan_id));
     }
 }

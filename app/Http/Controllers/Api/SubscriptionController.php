@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\SubscriptionStatusEnum;
 use App\Http\Requests\SubscriptionRequest;
+use App\Http\Requests\SubscriptionUpdateRequest;
 use App\Http\Resources\SubscriptionResource;
 use App\Models\Plan;
 use App\Models\Subscription;
@@ -11,6 +12,8 @@ use App\Traits\ApiResponseTrait;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
 class SubscriptionController
 {
@@ -19,20 +22,19 @@ class SubscriptionController
     public function index(Request $request): JsonResponse
     {
         $subscriptions = Subscription::with(['member.user', 'plan'])
-            ->when($request->status, fn ($q) => $q->where('status', $request->status))
-            ->when($request->member_id, fn ($q) => $q->where('member_id', $request->member_id))
-            ->when($request->plan_id, fn ($q) => $q->where('plan_id', $request->plan_id))
+            ->applyFilters($request)
             ->latest()
             ->paginate($request->input('per_page', 15));
 
-        return $this->success(
-            SubscriptionResource::collection($subscriptions),
+        return $this->success(SubscriptionResource::collection($subscriptions),
             'Subscriptions retrieved successfully.'
         );
     }
 
     public function store(SubscriptionRequest $request): JsonResponse
     {
+        $request->validated();
+
         $plan = Plan::findOrFail($request->plan_id);
         $endDate = Carbon::parse($request->start_date)->addDays($plan->duration_days);
 
@@ -47,40 +49,60 @@ class SubscriptionController
             'notes' => $request->notes,
         ]);
 
-        return $this->success(
-            SubscriptionResource::make($subscription->load(['member.user', 'plan'])),
+        $subscription->load(['member.user', 'plan']);
+
+        return $this->success(new SubscriptionResource($subscription),
             'Subscription created successfully.',
-            201
+            Response::HTTP_CREATED
         );
     }
 
-    public function show(Subscription $subscription): JsonResponse
+    public function show($subscriptionId): JsonResponse
     {
-        return $this->success(
-            SubscriptionResource::make($subscription->load(['member.user', 'plan', 'payments'])),
+        $subscription = Subscription::with(['member.user', 'plan', 'payments'])->find($subscriptionId);
+
+        if (! $subscription) {
+            return $this->error('Subscription not found.', Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->success(new SubscriptionResource($subscription),
             'Subscription retrieved successfully.'
         );
     }
 
-    public function update(Request $request, Subscription $subscription): JsonResponse
+    public function update(SubscriptionUpdateRequest $request, $subscriptionId): JsonResponse
     {
-        $request->validate([
-            'auto_renew' => ['nullable', 'boolean'],
-            'notes' => ['nullable', 'string'],
-            'status' => ['nullable', 'in:active,expired,cancelled'],
-        ]);
+        try {
+            $request->validated();
 
-        $subscription->update($request->only(['auto_renew', 'notes', 'status']));
+            $subscription = Subscription::with(['member.user', 'plan', 'payments'])->find($subscriptionId);
 
-        return $this->success(
-            SubscriptionResource::make($subscription->fresh()->load(['member.user', 'plan'])),
-            'Subscription updated successfully.'
-        );
+            if (! $subscription) {
+                return $this->error('Subscription not found.', ResponseAlias::HTTP_NOT_FOUND);
+            }
+
+            $subscription->update($request->only(['auto_renew', 'notes', 'status']));
+
+            return $this->success(new SubscriptionResource($subscription),
+                'Subscription updated successfully.');
+
+        } catch (\Exception $exception) {
+            return $this->error($exception->getMessage(), ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
-    public function destroy(Subscription $subscription): JsonResponse
+    public function destroy($subscriptionId): JsonResponse
     {
-        $subscription->update(['status' => SubscriptionStatusEnum::Cancelled]);
+        $subscription = Subscription::with(['member.user', 'plan', 'payments'])->find($subscriptionId);
+
+        if (! $subscription) {
+            return $this->error('Subscription not found.', Response::HTTP_NOT_FOUND);
+        }
+
+        $subscription->update([
+            'status' => SubscriptionStatusEnum::Cancelled,
+        ]);
+
         $subscription->delete();
 
         return $this->success([], message: 'Subscription cancelled successfully.');
@@ -105,7 +127,7 @@ class SubscriptionController
         if ($totalFreezeDays > $subscription->plan->max_freeze_days) {
             return $this->error(
                 "Exceeds max freeze days allowed ({$subscription->plan->max_freeze_days} days).",
-                422
+                Response::HTTP_UNPROCESSABLE_ENTITY
             );
         }
 
@@ -159,7 +181,7 @@ class SubscriptionController
         return $this->success(
             SubscriptionResource::make($newSubscription->load(['member.user', 'plan'])),
             'Subscription renewed successfully.',
-            201
+            Response::HTTP_CREATED
         );
     }
 }

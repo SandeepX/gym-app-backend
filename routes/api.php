@@ -84,12 +84,10 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('/trainers', TrainerController::class)->except(['edit', 'update']);
 
         // Subscriptions
-        Route::prefix('subscriptions')->group(function () {
-            Route::post('/{subscription}/freeze', [SubscriptionController::class, 'freeze']);
-            Route::post('/{subscription}/unfreeze', [SubscriptionController::class, 'unfreeze']);
-            Route::post('/{subscription}/renew', [SubscriptionController::class, 'renew']);
-            Route::apiResource('/', SubscriptionController::class);
-        });
+        Route::post('subscriptions/{subscription}/freeze', [SubscriptionController::class, 'freeze']);
+        Route::post('subscriptions/{subscription}/unfreeze', [SubscriptionController::class, 'unfreeze']);
+        Route::post('subscriptions/{subscription}/renew', [SubscriptionController::class, 'renew']);
+        Route::apiResource('/subscriptions', SubscriptionController::class)->except('edit');
 
         // Payments
         Route::apiResource('payments', PaymentController::class);

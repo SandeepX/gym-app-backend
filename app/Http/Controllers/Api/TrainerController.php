@@ -6,6 +6,7 @@ use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\TrainerResource;
 use App\Models\Member;
 use App\Models\User;
+use App\Services\UserService;
 use App\Traits\ApiResponseTrait;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -17,6 +18,10 @@ use Illuminate\Support\Facades\Hash;
 class TrainerController
 {
     use ApiResponseTrait;
+
+    public function __construct(private readonly UserService $userService)
+    {
+    }
 
     public function index(Request $request): JsonResponse
     {
@@ -40,20 +45,15 @@ class TrainerController
 
         $trainer = DB::transaction(function () use ($request) {
 
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'phone' => $request->phone,
-                'password' => Hash::make($request->password),
-                'is_active' => true,
-            ]);
+            $user = $this->userService->store($request);
 
             $user->assignRole('trainer');
 
             return $user;
         });
 
-        return $this->success(new TrainerResource($trainer->load('assignedMembers')), 'Trainer created successfully.',
+        return $this->success(new TrainerResource($trainer->load('assignedMembers')),
+            'Trainer created successfully.',
             Response::HTTP_CREATED
         );
     }
@@ -73,20 +73,24 @@ class TrainerController
 
     public function destroy($userId): JsonResponse
     {
-        $user = User::find($userId);
+        try{
+            $user = $this->userService->getUserDetailById($userId);
 
-        if (! $user || ! $user->hasRole('trainer')) {
-            return $this->error('User not found.', Response::HTTP_NOT_FOUND);
+            if ( !$user->hasRole('trainer')) {
+                return $this->error('User is not trainer.', Response::HTTP_NOT_FOUND);
+            }
+
+            DB::transaction(function () use ($user) {
+                $user->assignedMembers()->detach();
+                $user->update(['is_active' => false]);
+                $user->removeRole('trainer');
+                $user->delete();
+            });
+
+            return $this->success([], message: 'Trainer deleted successfully.');
+        }catch(Exception $exception){
+            return $this->error($exception->getMessage(), $exception->getCode());
         }
-
-        DB::transaction(function () use ($user) {
-            $user->assignedMembers()->detach();
-            $user->update(['is_active' => false]);
-            $user->removeRole('trainer');
-            $user->delete();
-        });
-
-        return $this->success([], message: 'Trainer deleted successfully.');
     }
 
     public function assignMember(Request $request, $userId): JsonResponse
@@ -96,10 +100,10 @@ class TrainerController
                 'member_id' => ['required', 'exists:members,id'],
             ]);
 
-            $user = User::find($userId);
+            $user = $this->userService->getUserDetailById($userId);
 
-            if (! $user || ! $user->hasRole('trainer')) {
-                throw new \RuntimeException('User not found.', Response::HTTP_NOT_FOUND);
+            if (! $user->hasRole('trainer')) {
+                throw new \RuntimeException('User is not trainer.', Response::HTTP_NOT_FOUND);
             }
 
             $member = Member::findOrFail($request->member_id);

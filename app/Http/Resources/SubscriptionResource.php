@@ -23,8 +23,8 @@ class SubscriptionResource extends JsonResource
                 'price' => $this->plan->price,
                 'duration_days' => $this->plan->duration_days,
             ]),
-            'start_date' => $this->start_date,
-            'end_date' => $this->end_date,
+            'start_date' => $this->start_date?->toDateString(),
+            'end_date' => $this->end_date?->toDateString(),
             'days_remaining' => $this->daysRemaining(),
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
@@ -33,7 +33,6 @@ class SubscriptionResource extends JsonResource
             'freeze_days_used' => $this->freeze_days_used,
             'auto_renew' => $this->auto_renew,
             'notes' => $this->notes,
-            'created_at' => $this->created_at,
         ];
     }
 }

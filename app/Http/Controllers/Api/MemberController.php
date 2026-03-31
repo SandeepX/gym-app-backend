@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\WorkoutPlan;
 use App\NotificationServiceInterface;
 use App\Services\MemberService;
+use App\Services\UserService;
 use App\Traits\ApiResponseTrait;
 use Carbon\Carbon;
 use Exception;
@@ -31,9 +32,12 @@ class MemberController
     use ApiResponseTrait;
 
     public function __construct(
-        public MemberService $memberService,
+        public MemberService                          $memberService,
+        public UserService                            $userService,
         private readonly NotificationServiceInterface $notificationService
-    ) {}
+    )
+    {
+    }
 
     public function index(Request $request): JsonResponse
     {
@@ -53,37 +57,35 @@ class MemberController
 
     public function store(MemberRequest $request): JsonResponse
     {
-        $validatedData = $request->validated();
+        try {
+            $validatedData = $request->validated();
 
-        return DB::transaction(function () use ($request, $validatedData) {
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password ?? Str::random(12)),
-                'phone' => $request->phone,
-                'is_active' => true,
-            ]);
+            return DB::transaction(function () use ($request, $validatedData) {
+                $user = $this->userService->store($request);
 
-            $user->assignRole('member');
+                $user->assignRole('member');
 
-            unset(
-                $validatedData['name'],
-                $validatedData['email'],
-                $validatedData['password'],
-                $validatedData['phone'],
-            );
+                unset(
+                    $validatedData['name'],
+                    $validatedData['email'],
+                    $validatedData['password'],
+                    $validatedData['phone'],
+                );
 
-            $validatedData['membership_number'] = Member::generateSequenceNumber('GYM');
+                $validatedData['membership_number'] = Member::generateSequenceNumber('GYM');
 
-            $member = $user->member()->create($validatedData);
+                $member = $user->member()->create($validatedData);
 
-            $this->notificationService->sendWelcome($user);
+                $this->notificationService->sendWelcome($user);
 
-            return $this->success(new MemberResource($member->load('user')),
-                'Member created successfully.',
-                ResponseAlias::HTTP_CREATED
-            );
-        });
+                return $this->success(new MemberResource($member->load('user')),
+                    'Member created successfully.',
+                    ResponseAlias::HTTP_CREATED
+                );
+            });
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        }
     }
 
     public function show($memberId): JsonResponse
@@ -97,7 +99,7 @@ class MemberController
                 'trainers',
                 'bodyMeasurements',
                 'workoutPlans.exercises',
-                'attendances' => fn ($q) => $q->limit(10),
+                'attendances' => fn($q) => $q->limit(10),
             ]);
 
             return $this->success(new MemberResource($member), 'Member retrieved successfully.');
@@ -114,13 +116,10 @@ class MemberController
 
             DB::transaction(function () use ($member) {
                 $member->trainers()->detach();
-
                 $member->user->update(['is_active' => false]);
-
                 $member->update([
                     'status' => MemberStatusEnum::Inactive,
                 ]);
-
                 $member->delete();
             });
 
@@ -181,9 +180,13 @@ class MemberController
     {
         $member = $this->memberService->getMemberDetailById($memberId, ['trainers']);
 
-        $trainer = User::findOrFail($request->trainer_id);
+        $trainer = User::find($request->trainer_id);
 
-        if (! $member->trainers()->where('user_id', $trainer->id)->exists()) {
+        if (!$trainer) {
+            return $this->error('Trainer not found', Response::HTTP_NOT_FOUND);
+        }
+
+        if (!$member->trainers()->where('user_id', $trainer->id)->exists()) {
             return $this->error('This trainer is not assigned to the member.', 422);
         }
 
@@ -210,7 +213,7 @@ class MemberController
             MemberStatusEnum::Suspended->value,
         ])->first();
 
-        return $this->success((array) $stats, 'Member stats retrieved successfully.');
+        return $this->success((array)$stats, 'Member stats retrieved successfully.');
     }
 
     public function memberWorkoutPlansDetails($memberId): JsonResponse
@@ -227,7 +230,7 @@ class MemberController
 
             $workoutPlan = WorkoutPlan::find($request->workout_plan_id);
 
-            if (! $workoutPlan) {
+            if (!$workoutPlan) {
                 throw new RuntimeException('Workout plan not found', Response::HTTP_NOT_FOUND);
             }
 
