@@ -17,9 +17,7 @@ class AttendanceController
 {
     use ApiResponseTrait;
 
-    public function __construct(public MemberService $memberService)
-    {
-    }
+    public function __construct(public MemberService $memberService) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -62,7 +60,7 @@ class AttendanceController
     public function checkout(Request $request, $attendanceId): JsonResponse
     {
         $attendance = Attendance::find($attendanceId);
-        if (!$attendance) {
+        if (! $attendance) {
             return $this->error('Attendance Detail Not Found');
         }
 
@@ -85,7 +83,7 @@ class AttendanceController
 
         $attendance = Attendance::find($attendanceId);
 
-        if (!$attendance) {
+        if (! $attendance) {
             return $this->error('Attendance Detail Not Found');
         }
 

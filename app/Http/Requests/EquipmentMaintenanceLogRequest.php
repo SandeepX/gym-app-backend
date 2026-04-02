@@ -29,7 +29,7 @@ class EquipmentMaintenanceLogRequest extends FormRequest
             'description' => ['required', 'string'],
             'cost' => ['nullable', 'numeric', 'min:0'],
             'performed_at' => ['required', 'date'],
-            'next_maintenance_date' => ['nullable', 'date'],
+            'next_maintenance_date' => ['nullable', 'date', 'after:performed_at'],
         ];
     }
 }

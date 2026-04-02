@@ -5,12 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Enums\EquipmentStatusEnum;
 use App\Http\Requests\EquipmentMaintenanceLogRequest;
 use App\Http\Requests\StoreEquipmentRequest;
-use App\Http\Requests\UpdateEquipmentRequest;
+use App\Http\Resources\EquipmentResource;
 use App\Models\Equipment;
-use App\Models\EquipmentMaintenanceLog;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 class EquipmentController
 {
@@ -19,13 +20,12 @@ class EquipmentController
     public function index(Request $request): JsonResponse
     {
         $equipment = Equipment::with('maintenanceLogs')
-            ->when($request->status, fn ($q) => $q->where('status', $request->status))
-            ->when($request->category, fn ($q) => $q->where('category', $request->category))
-            ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
+            ->filter($request->only(['status', 'category', 'search']))
             ->latest()
-            ->paginate($request->get('per_page', 15));
+            ->paginate($request->input('per_page', 15));
 
-        return $this->success($equipment, 'Equipment retrieved successfully.');
+        return $this->success(EquipmentResource::collection($equipment),
+            'Equipment retrieved successfully.');
     }
 
     public function store(StoreEquipmentRequest $request): JsonResponse
@@ -36,62 +36,80 @@ class EquipmentController
 
         $equipment = Equipment::create($validatedData);
 
-        return $this->success($equipment, 'Equipment added successfully.', 201);
+        return $this->success(new EquipmentResource($equipment),
+            'Equipment added successfully.', Response::HTTP_CREATED);
     }
 
-    public function show(Equipment $equipment): JsonResponse
+    public function show($equipmentId): JsonResponse
     {
-        return $this->success(
-            $equipment->load(['maintenanceLogs.performedBy:id,name']),
-            'Equipment retrieved successfully.'
-        );
+        $equipment = Equipment::with(['maintenanceLogs.performedBy:id,name'])->find($equipmentId);
+
+        if (! $equipment) {
+            return $this->error('Equipment not found.', Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->success(new EquipmentResource($equipment), 'Equipment retrieved successfully.');
     }
 
-    public function update(UpdateEquipmentRequest $request, Equipment $equipment): JsonResponse
+    public function destroy($equipmentId): JsonResponse
     {
-        $request->validated();
+        $equipment = Equipment::find($equipmentId);
 
-        $equipment->update($request->validated());
+        if (! $equipment) {
+            return $this->error('Equipment not found.', Response::HTTP_NOT_FOUND);
+        }
 
-        return $this->success($equipment->fresh(), 'Equipment updated successfully.');
-    }
-
-    public function destroy(Equipment $equipment): JsonResponse
-    {
         $equipment->delete();
 
         return $this->success([], message: 'Equipment deleted successfully.');
     }
 
-    /**
-     * Log maintenance.
-     */
-    public function logMaintenance(EquipmentMaintenanceLogRequest $request, Equipment $equipment): JsonResponse
+    public function logMaintenance(EquipmentMaintenanceLogRequest $request, $equipmentId): JsonResponse
     {
-        $request->validated();
+        $equipment = Equipment::find($equipmentId);
 
-        $log = EquipmentMaintenanceLog::create([
-            ...$request->validated(),
-            'equipment_id' => $equipment->id,
-            'performed_by' => $request->user()->id,
-        ]);
+        if (! $equipment) {
+            return $this->error('Equipment not found.', Response::HTTP_NOT_FOUND);
+        }
 
-        $equipment->update([
-            'last_maintenance_date' => $request->performed_at,
-            'next_maintenance_date' => $request->next_maintenance_date,
-            'status' => 'active',
-        ]);
+        $result = DB::transaction(function () use ($request, $equipment) {
+            $log = $equipment->maintenanceLogs()->create([
+                ...$request->validated(),
+                'performed_by' => $request->user()->id,
+            ]);
+
+            $equipment->update([
+                'last_maintenance_date' => $request->performed_at,
+                'next_maintenance_date' => $request->next_maintenance_date,
+                'status' => EquipmentStatusEnum::Active->value,
+            ]);
+
+            return $log;
+        });
 
         return $this->success(
-            $log->load('performedBy:id,name'),
+            new EquipmentResource($equipment->fresh()->load(['maintenanceLogs', 'maintenanceLogs.performedBy:id,name'])),
             'Maintenance logged successfully.',
-            201
+            Response::HTTP_CREATED
         );
     }
 
-    /**
-     * Equipment due for maintenance.
-     */
+    public function update(StoreEquipmentRequest $request, $equipmentId): JsonResponse
+    {
+        $request->validated();
+
+        $equipment = Equipment::find($equipmentId);
+
+        if (! $equipment) {
+            return $this->error('Equipment not found.', Response::HTTP_NOT_FOUND);
+        }
+
+        $equipment->update($request->validated());
+
+        return $this->success(new EquipmentResource($equipment->fresh()),
+            'Equipment updated successfully.');
+    }
+
     public function dueMaintenance(): JsonResponse
     {
         $equipment = Equipment::where('status', EquipmentStatusEnum::Active)

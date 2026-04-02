@@ -100,8 +100,8 @@ Route::prefix('v1')->group(function () {
         Route::put('attendance/update/{attendanceId}', [AttendanceController::class, 'update']);
 
         // Equipment
-        Route::get('equipment/due-maintenance', [EquipmentController::class, 'dueMaintenance']);
-        Route::post('equipment/{equipment}/maintenance', [EquipmentController::class, 'logMaintenance']);
-        Route::apiResource('equipment', EquipmentController::class);
+        Route::get('equipments/due-maintenance', [EquipmentController::class, 'dueMaintenance']);
+        Route::post('equipments/{equipment}/maintenance', [EquipmentController::class, 'logMaintenance']);
+        Route::apiResource('equipments', EquipmentController::class)->except('edit');
     });
 });

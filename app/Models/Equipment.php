@@ -44,4 +44,12 @@ class Equipment extends Model
     {
         return $this->next_maintenance_date && $this->next_maintenance_date <= now();
     }
+
+    public function scopeFilter($query, array $filters)
+    {
+        return $query
+            ->when($filters['status'] ?? null, fn ($q) => $q->where('status', $filters['status']))
+            ->when($filters['category'] ?? null, fn ($q) => $q->where('category', $filters['category']))
+            ->when($filters['search'] ?? null, fn ($q) => $q->where('name', 'like', "%{$filters['search']}%"));
+    }
 }
