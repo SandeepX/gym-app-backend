@@ -22,8 +22,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
@@ -32,12 +30,10 @@ class MemberController
     use ApiResponseTrait;
 
     public function __construct(
-        public MemberService                          $memberService,
-        public UserService                            $userService,
+        public MemberService $memberService,
+        public UserService $userService,
         private readonly NotificationServiceInterface $notificationService
-    )
-    {
-    }
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -99,7 +95,7 @@ class MemberController
                 'trainers',
                 'bodyMeasurements',
                 'workoutPlans.exercises',
-                'attendances' => fn($q) => $q->limit(10),
+                'attendances' => fn ($q) => $q->limit(10),
             ]);
 
             return $this->success(new MemberResource($member), 'Member retrieved successfully.');
@@ -182,11 +178,11 @@ class MemberController
 
         $trainer = User::find($request->trainer_id);
 
-        if (!$trainer) {
+        if (! $trainer) {
             return $this->error('Trainer not found', Response::HTTP_NOT_FOUND);
         }
 
-        if (!$member->trainers()->where('user_id', $trainer->id)->exists()) {
+        if (! $member->trainers()->where('user_id', $trainer->id)->exists()) {
             return $this->error('This trainer is not assigned to the member.', 422);
         }
 
@@ -213,7 +209,7 @@ class MemberController
             MemberStatusEnum::Suspended->value,
         ])->first();
 
-        return $this->success((array)$stats, 'Member stats retrieved successfully.');
+        return $this->success((array) $stats, 'Member stats retrieved successfully.');
     }
 
     public function memberWorkoutPlansDetails($memberId): JsonResponse
@@ -230,7 +226,7 @@ class MemberController
 
             $workoutPlan = WorkoutPlan::find($request->workout_plan_id);
 
-            if (!$workoutPlan) {
+            if (! $workoutPlan) {
                 throw new RuntimeException('Workout plan not found', Response::HTTP_NOT_FOUND);
             }
 

@@ -93,13 +93,11 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('payments', PaymentController::class);
 
         // Attendance
-        Route::prefix('attendance')->group(function () {
-            Route::get('/today', [AttendanceController::class, 'today']);
-            Route::post('/check-in', [AttendanceController::class, 'checkIn']);
-            Route::post('/check-out/{attendance}', [AttendanceController::class, 'checkOut']);
-            Route::get('/member/{member}', [AttendanceController::class, 'memberHistory']);
-            Route::apiResource('/', AttendanceController::class);
-        });
+        Route::post('attendance/check-in', [AttendanceController::class, 'checkIn']);
+        Route::post('attendance/check-out/{attendance}', [AttendanceController::class, 'checkout']);
+        Route::get('attendance/member/{member}', [AttendanceController::class, 'memberHistory']);
+        Route::get('attendance', [AttendanceController::class, 'index']);
+        Route::put('attendance/update/{attendanceId}', [AttendanceController::class, 'update']);
 
         // Equipment
         Route::get('equipment/due-maintenance', [EquipmentController::class, 'dueMaintenance']);

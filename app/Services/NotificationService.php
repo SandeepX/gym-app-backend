@@ -28,16 +28,12 @@ class NotificationService implements NotificationServiceInterface
 
     public function sendPaymentReceived(Payment $payment): void
     {
-        $this->send(
-            $payment->member->user,
-            new PaymentReceivedNotification($payment)
-        );
+        $this->send($payment->member->user, new PaymentReceivedNotification($payment));
     }
 
     private function send(User $user, $notification): void
     {
         $sync = filter_var(config('notifications.sync'), FILTER_VALIDATE_BOOLEAN);
-
         try {
             $sync
                 ? $user->notifyNow($notification)

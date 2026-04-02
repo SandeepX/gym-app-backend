@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Member;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -16,7 +15,7 @@ class UserService
     {
         $user = User::with($with)->find($userId);
 
-        if (!$user) {
+        if (! $user) {
             throw new RuntimeException('User Detail Not Found', Response::HTTP_NOT_FOUND);
         }
 
@@ -35,6 +34,4 @@ class UserService
 
         return User::create($insertData);
     }
-
-
 }

@@ -41,4 +41,13 @@ class Attendance extends Model
             'check_out' => 'datetime',
         ];
     }
+
+    public function scopeFilter($query, array $filters)
+    {
+        return $query
+            ->when($filters['member_id'] ?? null, fn ($q) => $q->where('member_id', $filters['member_id']))
+            ->when($filters['date'] ?? null, fn ($q) => $q->whereDate('check_in', $filters['date']))
+            ->when($filters['from_date'] ?? null, fn ($q) => $q->whereDate('check_in', '>=', $filters['from_date']))
+            ->when($filters['to_date'] ?? null, fn ($q) => $q->whereDate('check_in', '<=', $filters['to_date']));
+    }
 }

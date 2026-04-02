@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('payments', function (Blueprint $table) {
+        Schema::create('payments', static function (Blueprint $table) {
             $table->id();
             $table->string('invoice_number')->unique()->index();
             $table->foreignId('member_id')->constrained()->cascadeOnDelete();
@@ -25,6 +25,7 @@ return new class extends Migration
             $table->string('reference_number')->nullable();
             $table->timestamp('paid_at')->nullable()->index();
             $table->text('notes')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

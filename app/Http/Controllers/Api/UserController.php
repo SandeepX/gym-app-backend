@@ -19,19 +19,17 @@ class UserController
 {
     use ApiResponseTrait;
 
-    public function __construct(public UserService $userService)
-    {
-    }
+    public function __construct(public UserService $userService) {}
 
     public function index(Request $request): JsonResponse
     {
         $users = User::with('roles')
-            ->when($request->role, fn($q) => $q->whereHas('roles', fn($r) => $r->where('name', $request->role)
+            ->when($request->role, fn ($q) => $q->whereHas('roles', fn ($r) => $r->where('name', $request->role)
             ))
-            ->when($request->search, fn($q) => $q->where('name', 'like', "%{$request->search}%")
+            ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%")
                 ->orWhere('email', 'like', "%{$request->search}%")
             )
-            ->when($request->is_active, fn($q) => $q->where('is_active', $request->boolean('is_active'))
+            ->when($request->is_active, fn ($q) => $q->where('is_active', $request->boolean('is_active'))
             )->latest()
             ->paginate($request->input('per_page', 15));
 
@@ -43,8 +41,8 @@ class UserController
      */
     public function byRole(): JsonResponse
     {
-        $roles = Role::with(['users' => fn($q) => $q->select('users.id', 'name', 'email', 'phone', 'is_active'),
-        ])->get()->map(fn($role) => [
+        $roles = Role::with(['users' => fn ($q) => $q->select('users.id', 'name', 'email', 'phone', 'is_active'),
+        ])->get()->map(fn ($role) => [
             'role' => $role->name,
             'total' => $role->users->count(),
             'users' => $role->users,
@@ -60,7 +58,7 @@ class UserController
     {
         $stats = Role::withCount('users')
             ->get()
-            ->map(fn($role) => [
+            ->map(fn ($role) => [
                 'role' => $role->name,
                 'total' => $role->users_count,
             ]);
@@ -77,11 +75,11 @@ class UserController
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             $this->error('User not found', Response::HTTP_NOT_FOUND);
         }
 
-        if (!Hash::check($request->current_password, $user->password)) {
+        if (! Hash::check($request->current_password, $user->password)) {
             return $this->error('Current password is incorrect.', Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
@@ -94,7 +92,7 @@ class UserController
 
     public function updateProfile(UpdateProfileRequest $request, $userId): JsonResponse
     {
-        try{
+        try {
             $validatedData = $request->validated();
 
             $user = $this->userService->getUserDetailById($userId);
@@ -103,7 +101,7 @@ class UserController
 
             return $this->success([new UserResource($user->fresh()?->load(['roles']))],
                 'Update successful');
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             return $this->error($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }

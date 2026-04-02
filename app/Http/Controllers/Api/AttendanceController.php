@@ -2,73 +2,48 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\AttendanceCheckInRequest;
+use App\Http\Requests\AttendanceCheckoutRequest;
 use App\Http\Resources\AttendanceResource;
 use App\Models\Attendance;
-use App\Models\Member;
+use App\Services\MemberService;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
 class AttendanceController
 {
     use ApiResponseTrait;
 
+    public function __construct(public MemberService $memberService)
+    {
+    }
+
     public function index(Request $request): JsonResponse
     {
         $attendance = Attendance::with(['member.user', 'checkedInBy'])
-            ->when($request->member_id, fn ($q) => $q->where('member_id', $request->member_id))
-            ->when($request->date, fn ($q) => $q->whereDate('check_in', $request->date))
+            ->filter($request->only(['member_id', 'date', 'from_date', 'to_date']))
             ->latest('check_in')
-            ->paginate($request->get('per_page', 15));
+            ->paginate($request->input('per_page', 15));
 
-        return $this->success(
-            AttendanceResource::collection($attendance),
-            'Attendance retrieved successfully.'
-        );
+        return $this->success(AttendanceResource::collection($attendance),
+            'Attendance retrieved successfully.');
     }
 
-    public function store(Request $request): JsonResponse
+    public function checkIn(AttendanceCheckInRequest $request): JsonResponse
     {
-        return $this->checkIn($request);
-    }
+        $request->validated();
 
-    public function show(Attendance $attendance): JsonResponse
-    {
-        return $this->success(
-            AttendanceResource::make($attendance->load(['member.user', 'checkedInBy'])),
-            'Attendance retrieved successfully.'
-        );
-    }
-
-    public function update(Request $request, Attendance $attendance): JsonResponse
-    {
-        $request->validate(['notes' => ['nullable', 'string']]);
-        $attendance->update($request->only(['notes']));
-
-        return $this->success(AttendanceResource::make($attendance->fresh()), 'Attendance updated.');
-    }
-
-    public function destroy(Attendance $attendance): JsonResponse
-    {
-        $attendance->delete();
-
-        return $this->success(message: 'Attendance deleted successfully.');
-    }
-
-    public function checkIn(Request $request): JsonResponse
-    {
-        $request->validate([
-            'member_id' => ['required', 'exists:members,id'],
-            'notes' => ['nullable', 'string'],
-        ]);
-
-        $existing = Attendance::where('member_id', $request->member_id)
+        $existing = Attendance::query()
+            ->where('member_id', $request->member_id)
             ->whereNull('check_out')
             ->whereDate('check_in', today())
             ->first();
 
         if ($existing) {
-            return $this->error('Member is already checked in.', 422);
+            return $this->error('Member is already checked in.', Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $attendance = Attendance::create([
@@ -78,48 +53,53 @@ class AttendanceController
             'notes' => $request->notes,
         ]);
 
-        return $this->success(
-            AttendanceResource::make($attendance->load(['member.user'])),
+        return $this->success(new AttendanceResource($attendance->load(['member.user'])),
             'Member checked in successfully.',
-            201
+            ResponseAlias::HTTP_CREATED
         );
     }
 
-    public function checkOut(Request $request, Attendance $attendance): JsonResponse
+    public function checkout(Request $request, $attendanceId): JsonResponse
     {
+        $attendance = Attendance::find($attendanceId);
+        if (!$attendance) {
+            return $this->error('Attendance Detail Not Found');
+        }
+
         if ($attendance->check_out) {
-            return $this->error('Member already checked out.', 422);
+            return $this->error('Member already checked out.', Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $attendance->update(['check_out' => now()]);
 
-        return $this->success(
-            AttendanceResource::make($attendance->fresh()->load(['member.user'])),
+        $attendance->fresh()->load(['member.user']);
+
+        return $this->success(new AttendanceResource($attendance),
             "Member checked out. Duration: {$attendance->fresh()->durationMinutes()} minutes."
         );
     }
 
-    public function today(Request $request): JsonResponse
+    public function update(AttendanceCheckoutRequest $request, $attendanceId): JsonResponse
     {
-        $attendance = Attendance::with(['member.user'])
-            ->whereDate('check_in', today())
-            ->latest('check_in')
-            ->get();
+        $request->validated();
 
-        return $this->success(
-            AttendanceResource::collection($attendance),
-            "Today's attendance: {$attendance->count()} members."
-        );
+        $attendance = Attendance::find($attendanceId);
+
+        if (!$attendance) {
+            return $this->error('Attendance Detail Not Found');
+        }
+
+        $attendance->update($request->only(['notes', 'check_in', 'check_out']));
+
+        return $this->success(new AttendanceResource($attendance->fresh()),
+            'Attendance updated.');
     }
 
-    public function memberHistory(Request $request, Member $member): JsonResponse
+    public function memberHistory(Request $request, $memberId): JsonResponse
     {
-        $attendance = Attendance::where('member_id', $member->id)
-            ->latest('check_in')
-            ->paginate($request->get('per_page', 15));
+        $member = $this->memberService->getMemberDetailById($memberId, ['attendances']);
 
-        return $this->success(
-            AttendanceResource::collection($attendance),
+        return $this->success(AttendanceResource::collection($member->attendances),
             'Member attendance history retrieved.'
         );
     }

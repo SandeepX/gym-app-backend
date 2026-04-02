@@ -27,9 +27,8 @@ class PaymentResource extends JsonResource
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
             'reference_number' => $this->reference_number,
-            'paid_at' => $this->paid_at,
+            'paid_at' => $this->paid_at?->toDateTimeString(),
             'notes' => $this->notes,
-            'created_at' => $this->created_at,
         ];
     }
 }

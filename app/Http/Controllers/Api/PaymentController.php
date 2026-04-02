@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\PaymentStatusEnum;
 use App\Http\Requests\PaymentRequest;
+use App\Http\Requests\UpdatePaymentRequest;
 use App\Http\Resources\PaymentResource;
 use App\Models\Payment;
 use App\NotificationServiceInterface;
@@ -11,7 +11,6 @@ use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Validation\Rules\Enum;
 
 class PaymentController
 {
@@ -28,8 +27,7 @@ class PaymentController
             ->latest()
             ->paginate($request->input('per_page', 15));
 
-        return $this->success(
-            PaymentResource::collection($payments),
+        return $this->success(PaymentResource::collection($payments),
             'Payments retrieved successfully.'
         );
     }
@@ -47,9 +45,7 @@ class PaymentController
 
         $payment->load(['member.user', 'subscription.plan']);
 
-        return $this->success(
-            new PaymentResource($payment),
-            'Payment recorded successfully.',
+        return $this->success(new PaymentResource($payment), 'Payment recorded successfully.',
             Response::HTTP_CREATED
         );
     }
@@ -57,36 +53,30 @@ class PaymentController
     public function show($paymentId): JsonResponse
     {
         $payment = Payment::with(['member.user', 'subscription.plan', 'collectedBy'])->find($paymentId);
+
         if (! $payment) {
             return $this->error('Payment not found.', Response::HTTP_NOT_FOUND);
         }
 
-        return $this->success(
-            new PaymentResource($payment),
+        return $this->success(new PaymentResource($payment),
             'Payment retrieved successfully.'
         );
     }
 
-    public function update(Request $request, $paymentId): JsonResponse
+    public function update(UpdatePaymentRequest $request, $paymentId): JsonResponse
     {
         try {
-            $request->validate([
-                'status' => ['required', new Enum(PaymentStatusEnum::class)],
-                'notes' => ['nullable', 'string'],
-            ]);
+            $request->validated();
 
             $payment = Payment::find($paymentId);
-
             if (! $payment) {
                 return $this->error('Payment not found.', Response::HTTP_NOT_FOUND);
             }
 
             $payment->update($request->only(['status', 'notes']));
 
-            return $this->success(
-                PaymentResource::make($payment->fresh()),
-                'Payment updated successfully.'
-            );
+            return $this->success(new PaymentResource($payment->fresh()), 'Payment updated successfully.');
+
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
@@ -95,6 +85,7 @@ class PaymentController
     public function destroy($paymentId): JsonResponse
     {
         $payment = Payment::find($paymentId);
+
         if (! $payment) {
             return $this->error('Payment not found.', Response::HTTP_NOT_FOUND);
         }

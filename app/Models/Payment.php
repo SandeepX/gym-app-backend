@@ -8,11 +8,12 @@ use App\Traits\GenerateSequenceNumberTrait;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\Request;
 
 class Payment extends Model
 {
-    use GenerateSequenceNumberTrait;
+    use GenerateSequenceNumberTrait, SoftDeletes;
 
     protected $fillable = [
         'invoice_number',

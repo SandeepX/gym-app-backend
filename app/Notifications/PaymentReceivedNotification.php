@@ -8,7 +8,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 class PaymentReceivedNotification extends BaseNotification
 {
     public function __construct(
-        private Payment $payment
+        private readonly Payment $payment
     ) {}
 
     public function toMail(mixed $notifiable): MailMessage

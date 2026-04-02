@@ -13,15 +13,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 
 class TrainerController
 {
     use ApiResponseTrait;
 
-    public function __construct(private readonly UserService $userService)
-    {
-    }
+    public function __construct(private readonly UserService $userService) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -73,10 +70,10 @@ class TrainerController
 
     public function destroy($userId): JsonResponse
     {
-        try{
+        try {
             $user = $this->userService->getUserDetailById($userId);
 
-            if ( !$user->hasRole('trainer')) {
+            if (! $user->hasRole('trainer')) {
                 return $this->error('User is not trainer.', Response::HTTP_NOT_FOUND);
             }
 
@@ -88,7 +85,7 @@ class TrainerController
             });
 
             return $this->success([], message: 'Trainer deleted successfully.');
-        }catch(Exception $exception){
+        } catch (Exception $exception) {
             return $this->error($exception->getMessage(), $exception->getCode());
         }
     }

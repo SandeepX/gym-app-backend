@@ -17,11 +17,10 @@ class AttendanceResource extends JsonResource
                 'membership_number' => $this->member->membership_number,
             ]),
             'checked_in_by' => $this->whenLoaded('checkedInBy', fn () => $this->checkedInBy?->name),
-            'check_in' => $this->check_in,
-            'check_out' => $this->check_out,
+            'check_in' => $this->check_in?->toDateTimeString(),
+            'check_out' => $this->check_out?->toDateTimeString(),
             'duration_minutes' => $this->durationMinutes(),
             'notes' => $this->notes,
-            'created_at' => $this->created_at,
         ];
     }
 }
